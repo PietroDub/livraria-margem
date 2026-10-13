@@ -1,0 +1,7 @@
+node_modules
+.next
+out
+.git
+*.zip
+*.tar.gz
+api/db/*.sqlite3*

@@ -1,0 +1,28 @@
+# Ambiente local de aprendizado. A API é acessada pelo navegador, em localhost.
+services:
+  api:
+    build: ./api
+    ports: ['3001:3001']
+    environment:
+      RAILS_ENV: development
+      DATABASE_PATH: db/data/development.sqlite3
+      FRONTEND_ORIGINS: http://localhost:3000
+    volumes:
+      - books_data:/app/db/data
+    command: sh -c "mkdir -p db/data && bundle exec rails db:prepare && bundle exec rails db:seed && bundle exec rails server -b 0.0.0.0 -p 3001"
+    healthcheck:
+      test: ['CMD', 'ruby', '-rnet/http', '-e', "exit(Net::HTTP.get_response(URI('http://127.0.0.1:3001/up')).code == '200' ? 0 : 1)"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  frontend:
+    build: .
+    ports: ['3000:3000']
+    environment:
+      NEXT_PUBLIC_DATA_MODE: api
+      NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
+    depends_on:
+      api:
+        condition: service_healthy
+volumes:
+  books_data:

@@ -1,0 +1,11 @@
+node_modules/
+.next/
+out/
+.env*
+!.env.example
+api/db/*.sqlite3*
+api/db/data/
+*.tsbuildinfo
+api/log/*
+api/tmp/*
+.openai/local/
