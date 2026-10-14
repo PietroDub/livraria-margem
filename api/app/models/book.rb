@@ -2,6 +2,9 @@ class Book < ApplicationRecord
   # Lista fechada: a categoria precisa ser uma destas, não um texto livre.
   CATEGORIES = ['Literatura brasileira', 'Ficção', 'Tecnologia', 'Não ficção', 'Poesia'].freeze
 
+  # optional: livros já cadastrados não têm user_id. Rails 5+ exige belongs_to por padrão.
+  belongs_to :user, optional: true
+
   # Tira espaços nas pontas antes de validar título, autor e ISBN.
   before_validation :normalize_text
   validates :title, presence: true, length: { maximum: 180 }
@@ -16,6 +19,8 @@ class Book < ApplicationRecord
   # numericality sozinho aceita "10.5" depois do cast; aqui recusamos o valor original.
   validate :raw_integer_fields
 
+  # Ordena por título e id para manter consistência em buscas. => representa uma expressão lambda que define um escopo para o modelo.
+  # order(:title, :id) ordena primeiro por título e depois por id.
   scope :alphabetical, -> { order(:title, :id) }
 
   private
