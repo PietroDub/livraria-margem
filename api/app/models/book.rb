@@ -1,17 +1,19 @@
-# O model reúne regras que valem para qualquer entrada de dados.
 class Book < ApplicationRecord
+  # Lista fechada: a categoria precisa ser uma destas, não um texto livre.
   CATEGORIES = ['Literatura brasileira', 'Ficção', 'Tecnologia', 'Não ficção', 'Poesia'].freeze
 
+  # Tira espaços nas pontas antes de validar título, autor e ISBN.
   before_validation :normalize_text
   validates :title, presence: true, length: { maximum: 180 }
   validates :author, presence: true, length: { maximum: 120 }
   validates :category, inclusion: { in: CATEGORIES }
+  # ISBN só com 10 ou 13 dígitos, único no catálogo.
   validates :isbn, presence: true, uniqueness: true,
                    format: { with: /\A(?:\d{10}|\d{13})\z/, message: 'must contain 10 or 13 digits' }
   validates :description, length: { maximum: 2000 }
   validates :price_cents, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 100_000_000 }
   validates :stock, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 1_000_000 }
-  # Não use o client como única barreira para valores fracionários.
+  # numericality sozinho aceita "10.5" depois do cast; aqui recusamos o valor original.
   validate :raw_integer_fields
 
   scope :alphabetical, -> { order(:title, :id) }
