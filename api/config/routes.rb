@@ -5,6 +5,7 @@ Rails.application.routes.draw do
       resources :books, only: %i[index show create update destroy]
       #criação de rota para users
       resources :users, only: %i[index show create]
+      post 'users/login', to: 'users#login'
     end
   end
 end
