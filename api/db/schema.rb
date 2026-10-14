@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_14_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_14_190000) do
   create_table "books", force: :cascade do |t|
     t.string "title", null: false
     t.string "author", null: false
@@ -21,7 +21,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_14_000000) do
     t.text "description", default: "", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "user_id"
     t.index ["isbn"], name: "index_books_on_isbn", unique: true
+    t.index ["user_id"], name: "index_books_on_user_id"
     t.check_constraint "price_cents >= 0", name: "books_price_nonnegative"
     t.check_constraint "stock >= 0", name: "books_stock_nonnegative"
   end
@@ -32,4 +34,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_14_000000) do
     t.string "password_digest", null: false
     t.index ["email"], name: "index_users_on_email", unique: true
   end
+
+  add_foreign_key "books", "users"
 end
