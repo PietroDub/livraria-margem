@@ -30,7 +30,11 @@ class UsersTest < ActionDispatch::IntegrationTest
   test 'edita um usuário e retorna seu email' do
     post '/api/v1/users',
          params: { user: { name: 'Ana Silva', email: 'ana@example.com', password: 'senha123' } },
+         headers: { "Authorization" => "Bearer #{token}" },
          as: :json
+    token = Rails.application.message_verifier(:authentication).generate(
+      { user_id: user.id }, expires_in: 24.hours.to_i, purpose: :login
+    )
 
     assert_response :updated
     assert_equal 'ana@example.com', response.parsed_body['email']
@@ -47,8 +51,8 @@ class UsersTest < ActionDispatch::IntegrationTest
 
   test 'edita um usuario com ID inexistente e retorna 404 Not Found' do
     put '/api/v1/users/100',
-         params: { user: { name: 'Ana Silva', email: 'ana@example.com', password: 'senha123' } },
-         as: :json
+        params: { user: { name: 'Ana Silva', email: 'ana@example.com', password: 'senha123' } },
+        as: :json
 
     assert_response :not_found
     assert_equal 'Usuário não encontrado', response.parsed_body['error']
@@ -127,7 +131,6 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_response :unauthorized
     assert_equal 'Não autenticado.', response.parsed_body['error']
   end
-
 
   # TODO: testes para relacionamento entre usuários e livros
   test 'relaciona um usuário a um livro e retorna 200 OK' do
