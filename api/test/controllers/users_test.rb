@@ -78,54 +78,54 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_equal User.all, response.parsed_body
   end
 
-  # TODO: testes para login de usuário
+  test 'login de usuário e retorna 200 OK com token' do
+    create_user
 
-  test 'login de usuário e retorna 200 OK' do
     post '/api/v1/users/login',
-         params: { user: { email: 'ana@example.com', password: 'senha123' } },
+         params: { email: 'ana@example.com', password: 'senha123' },
          as: :json
 
     assert_response :ok
-    assert_equal 'ana@example.com', response.parsed_body['email']
+    body = response.parsed_body
+    assert_equal 'ana@example.com', body.fetch('user').fetch('email')
+    assert body.fetch('token').present?
+    assert_nil body['user']['password']
+    assert_nil body['user']['password_digest']
   end
 
   test 'login de usuário com email ou senha incorretos e retorna 401 Unauthorized' do
+    create_user
+
     post '/api/v1/users/login',
-         params: { user: { email: 'ana@example.com', password: 'senha123' } },
+         params: { email: 'ana@example.com', password: 'senha-errada' },
          as: :json
 
     assert_response :unauthorized
-    assert_equal 'Email ou senha incorretos', response.parsed_body['error']
+    assert_equal 'Email ou senha inválidos.', response.parsed_body['error']
   end
 
-  test 'verificar se resposta revela senha' do
-    post '/api/v1/users/login',
-         params: { user: { email: 'ana@example.com', password: 'senha123' } },
-         as: :json
+  test 'logout autenticado retorna 204 No Content' do
+    user = create_user
 
-    assert_response :ok
-    assert_equal nil, response.parsed_body['password']
+    post '/api/v1/users/logout', headers: auth_headers(user), as: :json
+
+    assert_response :no_content
   end
 
+  test 'logout sem token retorna 401 Unauthorized' do
+    post '/api/v1/users/logout', as: :json
 
-  # TODO: testes para logout de usuário
+    assert_response :unauthorized
+    assert_equal 'Não autenticado.', response.parsed_body['error']
+  end
 
-  test 'logout de usuário e retorna 200 OK' do
+  test 'logout com token inválido retorna 401 Unauthorized' do
     post '/api/v1/users/logout',
-         params: { user: { email: 'ana@example.com', password: 'senha123' } },
-         as: :json
-
-    assert_response :ok
-    assert_equal 'ana@example.com', response.parsed_body['email']
-  end
-
-  test 'logout de usuário com token inválido e retorna 401 Unauthorized' do
-    post '/api/v1/users/logout',
-         params: { user: { email: 'ana@example.com', password: 'senha123' } },
+         headers: { 'Authorization' => 'Bearer token-invalido' },
          as: :json
 
     assert_response :unauthorized
-    assert_equal 'Token inválido', response.parsed_body['error']
+    assert_equal 'Não autenticado.', response.parsed_body['error']
   end
 
 

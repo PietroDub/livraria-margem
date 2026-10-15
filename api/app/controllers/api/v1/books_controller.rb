@@ -2,22 +2,27 @@ module Api
   module V1
     class BooksController < ApplicationController
       before_action :set_book, only: %i[show update destroy]
+      skip_before_action :authenticate_user!, only: %i[index show]
 
       # GET /api/v1/books
       def index
-        render json: Book.alphabetical
+        @books = Book.alphabetical
+        render formats: :json
       end
 
       # GET /api/v1/books/:id
       def show
-        render json: @book
+        # Renderiza o template show.json.jbuilder desta action.
+        # `formats: :json` pede explicitamente o formato JSON nesta API-only app.
+        @book = Book.find(params[:id])
+        render formats: :json
       end
 
       # POST /api/v1/books
       def create
         book = Book.new(book_params)
         if book.save
-          render json: book, status: :created
+          render formats: :json, status: :created
         else
           render json: { errors: book.errors.full_messages }, status: :unprocessable_entity
         end
