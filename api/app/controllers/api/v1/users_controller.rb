@@ -2,7 +2,10 @@ module Api
   module V1
     class UsersController < ApplicationController
       before_action :set_user, only: %i[update destroy]
+      skip_before_action :authenticate_user!, only: %i[create login]
 
+      # GET /api/v1/users
+      # Lista todos os usuários ordenados por nome.
       def index
         render json: User.order(:name),
                only: %i[id name email]
@@ -32,33 +35,45 @@ module Api
       end
 
       # POST /api/v1/users/login
-      # Espera email e password no corpo da requisição.
+      # Action pública (skip do filtro). Email/senha no body; token no JSON.
       def login
-        user = User.find_by(email: params[:email])
+        # params.dig(:user, :email) é uma sintaxe para acessar um valor aninhado no hash de params.
+        # Se o valor não existir, params.dig(:user, :email) retorna nil.
+        email = params[:email] || params.dig(:user, :email)
+        password = params[:password] || params.dig(:user, :password)
+        # Encontra o usuário pelo email.
+        user = User.find_by(email: email)
 
-        # authenticate compara a senha recebida com o hash password_digest.
-        # &. evita chamar authenticate se nenhum usuário corresponder ao email.
-        if user&.authenticate(params[:password])
-          render json: user, only: %i[id name email]
+        # Verifica se o usuário existe e a senha é válida.
+        if user&.authenticate(password)
+          # Gera um token de autenticação válido por 24 horas com o metodo generate.
+          token = Rails.application.message_verifier(:authentication).generate(
+            { user_id: user.id },
+            # Tempo de validade do token em segundos, to_i converte para inteiro.
+            expires_in: 24.hours.to_i,
+            # O purpose é usado para identificar o tipo de token, nome que escolhemos.
+            purpose: :login
+          )
+
+          render json: {
+            user: user.as_json(only: %i[id name email]),
+            token: token
+          }
         else
-          # A mensagem é igual para email desconhecido e senha incorreta.
           render json: { error: 'Email ou senha inválidos.' }, status: :unauthorized
         end
       end
 
       # POST /api/v1/users/logout
+      # O filtro já exigiu Bearer válido e preencheu @  current_user.
+      # Sem denylist: o cliente descarta o token; o servidor só confirma a sessão.
       def logout
-        user = User.find_by(email: params[:email])
-        if user&.authenticate(params[:password])
-          render json: user, only: %i[id name email]
-        else
-          render json: { error: 'Email ou senha inválidos.' }, status: :unauthorized
-        end
+        head :no_content
       end
 
       def update
         if @user.update(user_params)
-          render json: @user, only: %i[id name email]
+          render json: @user, only: %i[id name email], status: :ok
         else
           render json: { errors: @user.errors.full_messages },
                  status: :unprocessable_entity
