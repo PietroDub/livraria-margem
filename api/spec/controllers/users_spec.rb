@@ -20,6 +20,13 @@ RSpec.describe UsersController, type: :controller do
       expect(JSON.parse(response.body)["name"]).to eq("John Doe")
       expect(JSON.parse(response.body)["email"]).to eq("john.doe@example.com")
     end
+
+    it "when the user is not created" do
+      post :create, params: { user: { name: "John Doe", email: "john.doe@example.com", password: "password" } }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(JSON.parse(response.body)["error"]).to eq("User not created")
+    end
   end
 
   describe "#show" do
@@ -38,11 +45,18 @@ RSpec.describe UsersController, type: :controller do
     it "updates a user" do
       user = create(:user)
 
-      put :update, params: { id: user.id, user: { name: "John Doe", email: "john.doe@example.com", password: "password" } }
+      put :update,
+          params: { id: user.id, user: { name: "John Doe", email: "john.doe@example.com", password: "password" } }
 
       expect(response).to have_http_status(:ok)
       expect(JSON.parse(response.body)["name"]).to eq("John Doe")
       expect(JSON.parse(response.body)["email"]).to eq("john.doe@example.com")
+    end
+
+    it "when user is not found" do
+      put :update, params: { id: 999, user: { name: "John Doe", email: "john.doe@example.com", password: "password" } }
+
+      expect(response).to have_http_status(:not_found)
     end
   end
 
@@ -54,9 +68,7 @@ RSpec.describe UsersController, type: :controller do
 
       expect(response).to have_http_status(:no_content)
     end
-  end
 
-  describe "#destroy" do
     it "when user is not found" do
       delete :destroy, params: { id: 999 }
 
@@ -76,5 +88,47 @@ RSpec.describe UsersController, type: :controller do
   #   end
   # end
 
+  describe "#login" do
+    context "when the credentials are valid" do
+      it "returns a token" do
+        user = create(:user)
 
+        post :login, params: {
+          email: user.email,
+          password: user.password
+        }
+
+        expect(response).to have_http_status(:ok)
+        expect(JSON.parse(response.body)["token"]).to be_present
+      end
+    end
+
+    context "when the credentials are invalid" do
+      it "returns unauthorized" do
+        post :login, params: {
+          email: "incorrect@example.com",
+          password: "incorrect"
+        }
+
+        expect(response).to have_http_status(:unauthorized)
+        expect(JSON.parse(response.body)["error"]).to eq("Invalid email or password")
+      end
+    end
+  end
+
+  describe "#logout" do
+    it "logs out the user" do
+      user = create(:user)
+
+      post :logout, params: { id: user.id }
+
+      expect(response).to have_http_status(:no_content)
+    end
+
+    it "when user is not found" do
+      post :logout, params: { id: 999 }
+
+      expect(response).to have_http_status(:not_found)
+    end
+  end
 end

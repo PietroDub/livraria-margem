@@ -1,5 +1,11 @@
 {
   "files.associations": {
     "*.jbuilder": "ruby"
-  }
+  },
+  "[ruby]": {
+    "editor.defaultFormatter": "rubocop.vscode-rubocop",
+    "editor.formatOnSave": true
+  },
+  "rubocop.mode": "onlyRunInBundler",
+  "rubocop.layoutMode": true
 }
