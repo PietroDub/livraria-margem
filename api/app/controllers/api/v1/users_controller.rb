@@ -65,7 +65,7 @@ module Api
       end
 
       # POST /api/v1/users/logout
-      # O filtro já exigiu Bearer válido e preencheu @current_user.
+      # O filtro já exigiu Bearer válido e preencheu @  current_user.
       # Sem denylist: o cliente descarta o token; o servidor só confirma a sessão.
       def logout
         head :no_content
@@ -73,7 +73,7 @@ module Api
 
       def update
         if @user.update(user_params)
-          render json: @user, only: %i[id name email]
+          render json: @user, only: %i[id name email], status: :ok
         else
           render json: { errors: @user.errors.full_messages },
                  status: :unprocessable_entity
