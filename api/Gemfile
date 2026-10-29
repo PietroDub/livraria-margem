@@ -9,3 +9,4 @@ gem 'jbuilder'
 gem 'rspec-rails'
 gem 'ruby-lsp', require: false
 gem 'rubocop', require: false
+gem 'kaminari', '>= 1.2.2'

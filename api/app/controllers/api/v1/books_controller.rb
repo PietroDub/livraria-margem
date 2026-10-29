@@ -6,7 +6,7 @@ module Api
 
       # GET /api/v1/books
       def index
-        @books = Book.alphabetical
+        @books = Book.alphabetical.page params[:page]
         render formats: :json
       end
 
