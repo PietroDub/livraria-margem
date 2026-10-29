@@ -1,73 +1,777 @@
-'use client';
-import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { BookOpen, Plus, Search, ArrowUpRight, Library, Code2, Package, Pencil, Trash2, X, Check, ChevronRight, Terminal, Filter, RefreshCw } from 'lucide-react';
-import { categories, demoMode, money, type Book } from '@/lib/books';
-import { useBookFilters } from '@/app/hooks/books/useBookFilters';
-import { useBookForm } from '@/app/hooks/books/useBookForm';
-import { useDeleteBook } from '@/app/hooks/books/useDeleteBook';
-import { useListBooks } from '@/app/hooks/books/useListBooks';
-import { useSaveBook } from '@/app/hooks/books/useSaveBook';
+"use client";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  BookOpen,
+  Plus,
+  Search,
+  ArrowUpRight,
+  Library,
+  Code2,
+  Package,
+  Pencil,
+  Trash2,
+  X,
+  Check,
+  ChevronRight,
+  Terminal,
+  Filter,
+  RefreshCw,
+} from "lucide-react";
+import { categories, demoMode, money, type Book } from "@/lib/books";
+import { useBookFilters } from "@/app/hooks/books/useBookFilters";
+import { useBookForm } from "@/app/hooks/books/useBookForm";
+import { useDeleteBook } from "@/app/hooks/books/useDeleteBook";
+import { useListBooks } from "@/app/hooks/books/useListBooks";
+import { useSaveBook } from "@/app/hooks/books/useSaveBook";
 
 const lessons = [
-  { title: 'Rotas: a porta de entrada', file: 'api/config/routes.rb', body: 'resources cria as cinco rotas REST do catálogo. O namespace organiza e versiona a API. O bloco do/end agrupa as instruções.', code: `namespace :api do\n  namespace :v1 do\n    resources :books, only: %i[index show create update destroy]\n  end\nend` },
-  { title: 'Model: as regras do livro', file: 'api/app/models/book.rb', body: 'class declara uma classe; < indica herança. Rails conecta Book à tabela books. Symbols (:title) nomeiam campos e opções. Validações protegem o banco em qualquer entrada.', code: `class Book < ApplicationRecord\n  validates :title, :author, presence: true\n  validates :isbn, uniqueness: true\n  validates :stock, numericality: {\n    only_integer: true, greater_than_or_equal_to: 0\n  }\nend` },
-  { title: 'Controller: a resposta HTTP', file: 'api/app/controllers/api/v1/books_controller.rb', body: 'def define um método. Book.new recebe os atributos permitidos. save valida e persiste; o if decide a resposta. O código 201 significa que um recurso foi criado.', code: `def create\n  book = Book.new(book_params)\n  if book.save\n    render json: book, status: :created\n  else\n    render json: { errors: book.errors.full_messages },\n           status: :unprocessable_entity\n  end\nend` },
-  { title: 'Strong parameters', file: 'api/app/controllers/api/v1/books_controller.rb', body: 'private restringe a visibilidade dos métodos. require exige a chave book e permit permite apenas os campos declarados. O cliente não escolhe id ou timestamps.', code: `private\n\ndef book_params\n  params.require(:book).permit(\n    :title, :author, :category, :isbn,\n    :price_cents, :stock, :description\n  )\nend` },
-  { title: 'Migration: estrutura do banco', file: 'api/db/migrate/20261013000000_create_books.rb', body: 'Uma migration versiona a estrutura do banco. t.string cria texto curto e t.integer cria um inteiro. Valores monetários são guardados em centavos para evitar imprecisão de ponto flutuante.', code: `create_table :books do |t|\n  t.string :title, null: false\n  t.string :isbn, null: false\n  t.integer :price_cents, null: false, default: 0\n  t.integer :stock, null: false, default: 0\n  t.timestamps\nend\nadd_index :books, :isbn, unique: true` }
+  {
+    title: "Rotas: a porta de entrada",
+    file: "api/config/routes.rb",
+    body: "resources cria as cinco rotas REST do catálogo. O namespace organiza e versiona a API. O bloco do/end agrupa as instruções.",
+    code: `namespace :api do\n  namespace :v1 do\n    resources :books, only: %i[index show create update destroy]\n  end\nend`,
+  },
+  {
+    title: "Model: as regras do livro",
+    file: "api/app/models/book.rb",
+    body: "class declara uma classe; < indica herança. Rails conecta Book à tabela books. Symbols (:title) nomeiam campos e opções. Validações protegem o banco em qualquer entrada.",
+    code: `class Book < ApplicationRecord\n  validates :title, :author, presence: true\n  validates :isbn, uniqueness: true\n  validates :stock, numericality: {\n    only_integer: true, greater_than_or_equal_to: 0\n  }\nend`,
+  },
+  {
+    title: "Controller: a resposta HTTP",
+    file: "api/app/controllers/api/v1/books_controller.rb",
+    body: "def define um método. Book.new recebe os atributos permitidos. save valida e persiste; o if decide a resposta. O código 201 significa que um recurso foi criado.",
+    code: `def create\n  book = Book.new(book_params)\n  if book.save\n    render json: book, status: :created\n  else\n    render json: { errors: book.errors.full_messages },\n           status: :unprocessable_entity\n  end\nend`,
+  },
+  {
+    title: "Strong parameters",
+    file: "api/app/controllers/api/v1/books_controller.rb",
+    body: "private restringe a visibilidade dos métodos. require exige a chave book e permit permite apenas os campos declarados. O cliente não escolhe id ou timestamps.",
+    code: `private\n\ndef book_params\n  params.require(:book).permit(\n    :title, :author, :category, :isbn,\n    :price_cents, :stock, :description\n  )\nend`,
+  },
+  {
+    title: "Migration: estrutura do banco",
+    file: "api/db/migrate/20261013000000_create_books.rb",
+    body: "Uma migration versiona a estrutura do banco. t.string cria texto curto e t.integer cria um inteiro. Valores monetários são guardados em centavos para evitar imprecisão de ponto flutuante.",
+    code: `create_table :books do |t|\n  t.string :title, null: false\n  t.string :isbn, null: false\n  t.integer :price_cents, null: false, default: 0\n  t.integer :stock, null: false, default: 0\n  t.timestamps\nend\nadd_index :books, :isbn, unique: true`,
+  },
 ];
 
 export default function Home() {
   const { books, loading, error, reload, upsert, drop } = useListBooks();
-  const { form, setForm, price, setPrice, error: fieldError, fill, reset, toInput } = useBookForm();
+  const {
+    form,
+    setForm,
+    price,
+    setPrice,
+    error: fieldError,
+    fill,
+    reset,
+    toInput,
+  } = useBookForm();
   const { save, saving, error: saveError, clearError } = useSaveBook();
-  const { remove: deleteBook, saving: deleting, error: deleteError, clearError: clearDeleteError } = useDeleteBook();
-  const { query, setQuery, category, setCategory, availability, setAvailability, filtered, stock, value, outOfStock, clear } = useBookFilters(books);
-  const [tab, setTab] = useState<'catalog' | 'learn'>('catalog');
-  const [notice, setNotice] = useState('');
-  const [modal, setModal] = useState<'form' | 'detail' | 'delete' | null>(null);
+  const {
+    remove: deleteBook,
+    saving: deleting,
+    error: deleteError,
+    clearError: clearDeleteError,
+  } = useDeleteBook();
+  const {
+    query,
+    setQuery,
+    category,
+    setCategory,
+    availability,
+    setAvailability,
+    filtered,
+    stock,
+    value,
+    outOfStock,
+    clear,
+  } = useBookFilters(books);
+  const [tab, setTab] = useState<"catalog" | "learn">("catalog");
+  const [notice, setNotice] = useState("");
+  const [modal, setModal] = useState<"form" | "detail" | "delete" | null>(null);
   const [selected, setSelected] = useState<Book | null>(null);
   const [lesson, setLesson] = useState(0);
   const dialog = useRef<HTMLDialogElement>(null);
   const busy = saving || deleting;
   const formError = fieldError || saveError;
-  useEffect(() => { if (modal) dialog.current?.showModal(); else dialog.current?.close(); }, [modal]);
-  useEffect(() => { if (!notice) return; const timer = setTimeout(() => setNotice(''), 4500); return () => clearTimeout(timer); }, [notice]);
-  function edit(book?: Book) { setSelected(book ?? null); if (book) fill(book); else reset(); clearError(); setModal('form'); }
+  useEffect(() => {
+    if (modal) dialog.current?.showModal();
+    else dialog.current?.close();
+  }, [modal]);
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(""), 4500);
+    return () => clearTimeout(timer);
+  }, [notice]);
+  function edit(book?: Book) {
+    setSelected(book ?? null);
+    if (book) fill(book);
+    else reset();
+    clearError();
+    setModal("form");
+  }
   async function submit(event: FormEvent) {
     event.preventDefault();
     const input = toInput();
     if (!input) return;
-    try { const saved = await save(input, selected?.id); upsert(saved); setModal(null); setNotice(selected ? 'Livro atualizado com sucesso.' : 'Livro adicionado ao catálogo.'); }
-    catch { /* a mensagem fica em saveError */ }
+    try {
+      const saved = await save(input, selected?.id);
+      upsert(saved);
+      setModal(null);
+      setNotice(
+        selected
+          ? "Livro atualizado com sucesso."
+          : "Livro adicionado ao catálogo.",
+      );
+    } catch {
+      /* a mensagem fica em saveError */
+    }
   }
-  async function remove() { if (!selected) return; try { await deleteBook(selected.id); drop(selected.id); setModal(null); setNotice('Livro excluído do catálogo.'); } catch { /* a mensagem fica em deleteError */ } }
-  return <div className="shell">
-    <aside className="sidebar">
-      <a className="brand" href="#" onClick={e => { e.preventDefault(); setTab('catalog'); }}><span className="brand-icon"><BookOpen size={24}/></span><span>margem<span className="brand-dot">.</span><small>GESTÃO DE LIVRARIA</small></span></a>
-      <div className="workspace"><span className="workspace-avatar">M</span><div>Minha livraria<small>Seu espaço de gestão</small></div><ChevronRight size={15}/></div>
-      <span className="nav-label">ESPAÇO DE TRABALHO</span>
-      <nav><button className={tab === 'catalog' ? 'active' : ''} onClick={() => setTab('catalog')}><Library size={19}/> Catálogo de livros <span>{books.length}</span></button><button className={tab === 'learn' ? 'active' : ''} onClick={() => setTab('learn')}><Code2 size={19}/> Aprender Ruby <span className="tiny">GUIA</span></button></nav>
-      <div className="sidebar-bottom"><div className="learn-card"><span className="ruby-mark">◇</span><strong>Pequeno projeto.<br/>Grandes aprendizados.</strong><p>Conheça o Ruby por trás<br/>de cada livro do catálogo.</p><button onClick={() => setTab('learn')}>Explorar o guia <ArrowUpRight size={16}/></button></div><div className="profile"><div className="profile-avatar">ML</div><div>Minha livraria<small>Projeto de aprendizado</small></div></div></div>
-    </aside>
-    <div className="main-wrap"><header className="topbar"><div>Livraria <ChevronRight size={14}/> <strong>{tab === 'catalog' ? 'Catálogo de livros' : 'Aprender Ruby'}</strong></div><span className="mode"><i/>{demoMode ? 'Demonstração local' : 'API Ruby / Rails'}</span></header>
-    <main><div className="page-heading"><div><div className="eyebrow">UM NOVO CAPÍTULO PARA SUA LIVRARIA</div><h1>{tab === 'catalog' ? 'Histórias bem organizadas.' : 'Código que faz sentido.'}</h1><p>{tab === 'catalog' ? 'Seu acervo em um só lugar. Mais tempo para descobrir a próxima boa leitura.' : 'Aprenda Ruby acompanhando o caminho de um livro, da requisição ao banco.'}</p></div>{tab === 'catalog' && <button className="primary" onClick={() => edit()}><Plus size={18}/> Adicionar livro</button>}</div>
-    {tab === 'catalog' ? <>
-      <section className="stats" aria-label="Resumo do catálogo"><div><span>Títulos no catálogo <Library size={18}/></span><strong>{loading ? '—' : String(books.length).padStart(2, '0')}</strong><small>Histórias esperando por leitores</small></div><div><span>Exemplares em estoque <Package size={18}/></span><strong>{loading ? '—' : stock}</strong><small>{outOfStock} títulos sem estoque</small></div><div><span>Valor do acervo <span className="currency-icon">R$</span></span><strong>{loading ? '—' : money(value)}</strong><small>Preço de venda × exemplares</small></div></section>
-      <section className="catalog"><div className="section-title"><div><h2>Seu catálogo <span>{books.length} livros</span></h2><p>Cada livro tem seu lugar. Encontre, edite e cuide do seu acervo.</p></div><span className="view-label"><Library size={16}/> Visualização em lista</span></div>
-      <div className="filters"><label className="search"><Search size={18}/><input aria-label="Buscar livros" placeholder="Busque por título, autor ou ISBN…" value={query} onChange={e => setQuery(e.target.value)}/>{query && <button aria-label="Limpar busca" onClick={() => setQuery('')}><X size={15}/></button>}</label><label className="select-filter"><Filter size={15}/><select aria-label="Filtrar categoria" value={category} onChange={e => setCategory(e.target.value)}><option>Todas as categorias</option>{categories.map(item => <option key={item}>{item}</option>)}</select></label><select aria-label="Filtrar estoque" value={availability} onChange={e => setAvailability(e.target.value)}><option>Todos os estoques</option><option>Disponíveis</option><option>Sem estoque</option></select></div>
-      {error ? <div className="empty error" role="alert"><strong>Não foi possível carregar o catálogo</strong><p>{error}</p><button className="secondary" onClick={() => void reload()}><RefreshCw size={16}/> Tentar novamente</button></div> : loading ? <div className="empty">Carregando seu acervo…</div> : <div className="table-scroll"><table><thead><tr><th>LIVRO / AUTOR</th><th>CATEGORIA</th><th>PREÇO</th><th>ESTOQUE</th><th className="actions-heading">AÇÕES</th></tr></thead><tbody>{filtered.map(book => <tr key={book.id}><td><button className="book-cell" onClick={() => { setSelected(book); setModal('detail'); }}><div className={`cover cover-${categories.indexOf(book.category)}`}><span>{book.author.split(' ').slice(-1)[0]}</span><strong>{book.title}</strong><i/><small>MARGEM · ACERVO</small></div><div><strong>{book.title}</strong><span>{book.author}</span></div></button></td><td><span className="category-tag">{book.category}</span></td><td className="price">{money(book.price_cents)}</td><td><span className={`stock-badge ${book.stock === 0 ? 'out' : book.stock <= 3 ? 'low' : ''}`}><i/>{book.stock === 0 ? 'Sem estoque' : `${book.stock} disponíveis`}</span></td><td><div className="actions"><button title={`Editar ${book.title}`} aria-label={`Editar ${book.title}`} onClick={() => edit(book)}><Pencil size={17}/></button><button title={`Excluir ${book.title}`} aria-label={`Excluir ${book.title}`} onClick={() => { setSelected(book); clearDeleteError(); setModal('delete'); }}><Trash2 size={17}/></button></div></td></tr>)}</tbody></table>{filtered.length === 0 && <div className="empty"><BookOpen size={30}/><strong>{books.length ? 'Nenhum livro encontrado' : 'Seu primeiro capítulo começa aqui'}</strong><p>{books.length ? 'Experimente outro termo ou remova os filtros.' : 'Adicione um livro para começar a organizar seu acervo.'}</p><button className="secondary" onClick={() => books.length ? clear() : edit()}>{books.length ? 'Limpar filtros' : 'Adicionar primeiro livro'}</button></div>}</div>}
-      <div className="table-footer"><span>Mostrando {filtered.length} de {books.length} livros</span><span>Feito para simplificar seu dia a dia <BookOpen size={14}/></span></div></section>
-      <section className="guide-banner"><div className="code-icon"><Code2 size={26}/></div><div><h3>Um catálogo por fora. Uma aula de Ruby por dentro.</h3><p>Entenda rotas, models e controllers com exemplos deste projeto.</p></div><button onClick={() => setTab('learn')}>Conhecer a API <ArrowUpRight size={17}/></button></section>
-    </> : <section className="learning"><div className="learning-intro"><span className="ruby-mark">◇</span><div><h2>Da interface ao banco de dados</h2><p>Next.js → fetch HTTP → rota Rails → controller → model → SQLite</p></div></div><div className="lesson-layout"><nav className="lesson-nav">{lessons.map((item, index) => <button className={lesson === index ? 'chosen' : ''} key={item.title} onClick={() => setLesson(index)}><span>0{index + 1}</span>{item.title}<ChevronRight size={16}/></button>)}</nav><article className="lesson"><span className="eyebrow">RUBY NA PRÁTICA · 0{lesson + 1}</span><h2>{lessons[lesson].title}</h2><p>{lessons[lesson].body}</p><div className="code-file"><Terminal size={15}/>{lessons[lesson].file}</div><pre><code>{lessons[lesson].code}</code></pre><div className="lesson-note"><BookOpen size={18}/><p>O código completo está na pasta <strong>api/</strong> do projeto. Siga o <strong>docs/APRENDENDO_RUBY.md</strong> para executar exemplos e testes.</p></div><button className="secondary" onClick={() => setLesson((lesson + 1) % lessons.length)}>Próximo conceito <ChevronRight size={16}/></button></article></div><div className="endpoint-list"><h3>O contrato do catálogo</h3>{[['GET', '/api/v1/books', 'Listar livros'], ['GET', '/api/v1/books/:id', 'Consultar um livro'], ['POST', '/api/v1/books', 'Cadastrar · 201'], ['PATCH', '/api/v1/books/:id', 'Atualizar · 200'], ['DELETE', '/api/v1/books/:id', 'Excluir · 204']].map(([method,path,description]) => <div key={method+path}><span>{method}</span><code>{path}</code><small>{description}</small></div>)}</div></section>}
-    {demoMode && <p className="demo-note">Modo demonstração: os dados ficam apenas neste navegador. Para praticar com a API Ruby e o banco SQLite, execute o projeto completo seguindo o README.</p>}
-    <footer><span>margem. <span>Um espaço para livros e aprendizado.</span></span><span>Next.js + TypeScript <i/> Ruby on Rails</span></footer>
-    </main></div>
-    {notice && <div className="toast" role="status"><Check size={18}/>{notice}</div>}
-    <dialog ref={dialog} onCancel={e => { if (busy) e.preventDefault(); else setModal(null); }} onClick={e => { if (e.target === dialog.current && !busy) setModal(null); }}><div className="modal-content"><button className="close" aria-label="Fechar janela" disabled={busy} onClick={() => setModal(null)}><X size={20}/></button>
-    {modal === 'form' && <><span className="eyebrow">SEU ACERVO</span><h2>{selected ? 'Editar livro' : 'Uma nova história.'}</h2><p>Preencha os dados para {selected ? 'atualizar' : 'adicionar um livro ao'} seu catálogo.</p><form onSubmit={submit}><label>Título<input autoFocus required maxLength={180} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}/></label><label>Autor<input required maxLength={120} value={form.author} onChange={e => setForm({ ...form, author: e.target.value })}/></label><div className="form-row"><label>Categoria<select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>{categories.map(item => <option key={item}>{item}</option>)}</select></label><label>ISBN (10 ou 13 dígitos)<input required pattern="[0-9]{10}|[0-9]{13}" value={form.isbn} onChange={e => setForm({ ...form, isbn: e.target.value })}/></label></div><div className="form-row"><label>Preço (R$)<input required inputMode="decimal" type="number" min="0" max="1000000" step="0.01" value={price} onChange={e => setPrice(e.target.value)}/></label><label>Exemplares<input required type="number" min="0" max="1000000" step="1" value={form.stock} onChange={e => setForm({ ...form, stock: Number(e.target.value) })}/></label></div><label>Descrição<textarea maxLength={2000} rows={3} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}/></label>{formError && <p className="form-error" role="alert">{formError}</p>}<div className="modal-actions"><button type="button" className="secondary" disabled={busy} onClick={() => setModal(null)}>Cancelar</button><button className="primary" disabled={busy}>{saving ? 'Salvando…' : selected ? 'Salvar alterações' : 'Adicionar livro'}</button></div></form></>}
-    {modal === 'detail' && selected && <><span className="eyebrow">DETALHES DO LIVRO</span><h2>{selected.title}</h2><p>por {selected.author}</p><span className="category-tag">{selected.category}</span><p className="description">{selected.description || 'Este livro ainda não tem uma descrição.'}</p><dl><div><dt>Preço de venda</dt><dd>{money(selected.price_cents)}</dd></div><div><dt>Estoque</dt><dd>{selected.stock} exemplares</dd></div><div><dt>ISBN</dt><dd>{selected.isbn}</dd></div></dl><button className="primary" onClick={() => edit(selected)}><Pencil size={16}/> Editar livro</button></>}
-    {modal === 'delete' && selected && <><span className="delete-icon"><Trash2 size={25}/></span><h2>Excluir este livro?</h2><p><strong>{selected.title}</strong> será removido do catálogo. Essa ação não pode ser desfeita.</p>{deleteError && <p className="form-error" role="alert">{deleteError}</p>}<div className="modal-actions"><button className="secondary" disabled={busy} onClick={() => setModal(null)}>Manter livro</button><button className="danger" disabled={busy} onClick={() => void remove()}>{deleting ? 'Excluindo…' : 'Excluir livro'}</button></div></>}
-    </div></dialog>
-    <span className="sr-only">{demoMode ? 'Dados desta demonstração ficam somente neste navegador. A API Rails é executada separadamente.' : 'Dados fornecidos pela API Ruby.'}</span>
-  </div>;
+  async function remove() {
+    if (!selected) return;
+    try {
+      await deleteBook(selected.id);
+      drop(selected.id);
+      setModal(null);
+      setNotice("Livro excluído do catálogo.");
+    } catch {
+      /* a mensagem fica em deleteError */
+    }
+  }
+  return (
+    <div className="shell">
+      <aside className="sidebar">
+        <a
+          className="brand"
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            setTab("catalog");
+          }}
+        >
+          <span className="brand-icon">
+            <BookOpen size={24} />
+          </span>
+          <span>
+            margem<span className="brand-dot">.</span>
+            <small>GESTÃO DE LIVRARIA</small>
+          </span>
+        </a>
+        <div className="workspace">
+          <span className="workspace-avatar">M</span>
+          <div>
+            Minha livraria<small>Seu espaço de gestão</small>
+          </div>
+          <ChevronRight size={15} />
+        </div>
+        <span className="nav-label">ESPAÇO DE TRABALHO</span>
+        <nav>
+          <button
+            className={tab === "catalog" ? "active" : ""}
+            onClick={() => setTab("catalog")}
+          >
+            <Library size={19} /> Catálogo de livros <span>{books.length}</span>
+          </button>
+          <button
+            className={tab === "learn" ? "active" : ""}
+            onClick={() => setTab("learn")}
+          >
+            <Code2 size={19} /> Aprender Ruby <span className="tiny">GUIA</span>
+          </button>
+        </nav>
+        <div className="sidebar-bottom">
+          <div className="learn-card">
+            <span className="ruby-mark">◇</span>
+            <strong>
+              Pequeno projeto.
+              <br />
+              Grandes aprendizados.
+            </strong>
+            <p>
+              Conheça o Ruby por trás
+              <br />
+              de cada livro do catálogo.
+            </p>
+            <button onClick={() => setTab("learn")}>
+              Explorar o guia <ArrowUpRight size={16} />
+            </button>
+          </div>
+          <div className="profile">
+            <div className="profile-avatar">ML</div>
+            <div>
+              Minha livraria<small>Projeto de aprendizado</small>
+            </div>
+          </div>
+        </div>
+      </aside>
+      <div className="main-wrap">
+        <header className="topbar">
+          <div>
+            Livraria <ChevronRight size={14} />{" "}
+            <strong>
+              {tab === "catalog" ? "Catálogo de livros" : "Aprender Ruby"}
+            </strong>
+          </div>
+          <span className="mode">
+            <i />
+            {demoMode ? "Demonstração local" : "API Ruby / Rails"}
+          </span>
+        </header>
+        <main>
+          <div className="page-heading">
+            <div>
+              <div className="eyebrow">UM NOVO CAPÍTULO PARA SUA LIVRARIA</div>
+              <h1>
+                {tab === "catalog"
+                  ? "Histórias bem organizadas."
+                  : "Código que faz sentido."}
+              </h1>
+              <p>
+                {tab === "catalog"
+                  ? "Seu acervo em um só lugar. Mais tempo para descobrir a próxima boa leitura."
+                  : "Aprenda Ruby acompanhando o caminho de um livro, da requisição ao banco."}
+              </p>
+            </div>
+            {tab === "catalog" && (
+              <button className="primary" onClick={() => edit()}>
+                <Plus size={18} /> Adicionar livro
+              </button>
+            )}
+          </div>
+          {tab === "catalog" ? (
+            <>
+              <section className="stats" aria-label="Resumo do catálogo">
+                <div>
+                  <span>
+                    Títulos no catálogo <Library size={18} />
+                  </span>
+                  <strong>
+                    {loading ? "—" : String(books.length).padStart(2, "0")}
+                  </strong>
+                  <small>Histórias esperando por leitores</small>
+                </div>
+                <div>
+                  <span>
+                    Exemplares em estoque <Package size={18} />
+                  </span>
+                  <strong>{loading ? "—" : stock}</strong>
+                  <small>{outOfStock} títulos sem estoque</small>
+                </div>
+                <div>
+                  <span>
+                    Valor do acervo <span className="currency-icon">R$</span>
+                  </span>
+                  <strong>{loading ? "—" : money(value)}</strong>
+                  <small>Preço de venda × exemplares</small>
+                </div>
+              </section>
+              <section className="catalog">
+                <div className="section-title">
+                  <div>
+                    <h2>
+                      Seu catálogo <span>{books.length} livros</span>
+                    </h2>
+                    <p>
+                      Cada livro tem seu lugar. Encontre, edite e cuide do seu
+                      acervo.
+                    </p>
+                  </div>
+                  <span className="view-label">
+                    <Library size={16} /> Visualização em lista
+                  </span>
+                </div>
+                <div className="filters">
+                  <label className="search">
+                    <Search size={18} />
+                    <input
+                      aria-label="Buscar livros"
+                      placeholder="Busque por título, autor ou ISBN…"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                    />
+                    {query && (
+                      <button
+                        aria-label="Limpar busca"
+                        onClick={() => setQuery("")}
+                      >
+                        <X size={15} />
+                      </button>
+                    )}
+                  </label>
+                  <label className="select-filter">
+                    <Filter size={15} />
+                    <select
+                      aria-label="Filtrar categoria"
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                    >
+                      <option>Todas as categorias</option>
+                      {categories.map((item) => (
+                        <option key={item}>{item}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <select
+                    aria-label="Filtrar estoque"
+                    value={availability}
+                    onChange={(e) => setAvailability(e.target.value)}
+                  >
+                    <option>Todos os estoques</option>
+                    <option>Disponíveis</option>
+                    <option>Sem estoque</option>
+                  </select>
+                </div>
+                {error ? (
+                  <div className="empty error" role="alert">
+                    <strong>Não foi possível carregar o catálogo</strong>
+                    <p>{error}</p>
+                    <button className="secondary" onClick={() => void reload()}>
+                      <RefreshCw size={16} /> Tentar novamente
+                    </button>
+                  </div>
+                ) : loading ? (
+                  <div className="empty">Carregando seu acervo…</div>
+                ) : (
+                  <div className="table-scroll">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>LIVRO / AUTOR</th>
+                          <th>CATEGORIA</th>
+                          <th>PREÇO</th>
+                          <th>ESTOQUE</th>
+                          <th className="actions-heading">AÇÕES</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filtered.map((book) => (
+                          <tr key={book.id}>
+                            <td>
+                              <button
+                                className="book-cell"
+                                onClick={() => {
+                                  setSelected(book);
+                                  setModal("detail");
+                                }}
+                              >
+                                <div
+                                  className={`cover cover-${categories.indexOf(book.category)}`}
+                                >
+                                  <span>
+                                    {book.author.split(" ").slice(-1)[0]}
+                                  </span>
+                                  <strong>{book.title}</strong>
+                                  <i />
+                                  <small>MARGEM · ACERVO</small>
+                                </div>
+                                <div>
+                                  <strong>{book.title}</strong>
+                                  <span>{book.author}</span>
+                                </div>
+                              </button>
+                            </td>
+                            <td>
+                              <span className="category-tag">
+                                {book.category}
+                              </span>
+                            </td>
+                            <td className="price">{money(book.price_cents)}</td>
+                            <td>
+                              <span
+                                className={`stock-badge ${book.stock === 0 ? "out" : book.stock <= 3 ? "low" : ""}`}
+                              >
+                                <i />
+                                {book.stock === 0
+                                  ? "Sem estoque"
+                                  : `${book.stock} disponíveis`}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="actions">
+                                <button
+                                  title={`Editar ${book.title}`}
+                                  aria-label={`Editar ${book.title}`}
+                                  onClick={() => edit(book)}
+                                >
+                                  <Pencil size={17} />
+                                </button>
+                                <button
+                                  title={`Excluir ${book.title}`}
+                                  aria-label={`Excluir ${book.title}`}
+                                  onClick={() => {
+                                    setSelected(book);
+                                    clearDeleteError();
+                                    setModal("delete");
+                                  }}
+                                >
+                                  <Trash2 size={17} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {filtered.length === 0 && (
+                      <div className="empty">
+                        <BookOpen size={30} />
+                        <strong>
+                          {books.length
+                            ? "Nenhum livro encontrado"
+                            : "Seu primeiro capítulo começa aqui"}
+                        </strong>
+                        <p>
+                          {books.length
+                            ? "Experimente outro termo ou remova os filtros."
+                            : "Adicione um livro para começar a organizar seu acervo."}
+                        </p>
+                        <button
+                          className="secondary"
+                          onClick={() => (books.length ? clear() : edit())}
+                        >
+                          {books.length
+                            ? "Limpar filtros"
+                            : "Adicionar primeiro livro"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div className="table-footer">
+                  <span>
+                    Mostrando {filtered.length} de {books.length} livros
+                  </span>
+                  <span>
+                    Feito para simplificar seu dia a dia <BookOpen size={14} />
+                  </span>
+                </div>
+              </section>
+              <section className="guide-banner">
+                <div className="code-icon">
+                  <Code2 size={26} />
+                </div>
+                <div>
+                  <h3>Um catálogo por fora. Uma aula de Ruby por dentro.</h3>
+                  <p>
+                    Entenda rotas, models e controllers com exemplos deste
+                    projeto.
+                  </p>
+                </div>
+                <button onClick={() => setTab("learn")}>
+                  Conhecer a API <ArrowUpRight size={17} />
+                </button>
+              </section>
+            </>
+          ) : (
+            <section className="learning">
+              <div className="learning-intro">
+                <span className="ruby-mark">◇</span>
+                <div>
+                  <h2>Da interface ao banco de dados</h2>
+                  <p>
+                    Next.js → fetch HTTP → rota Rails → controller → model →
+                    SQLite
+                  </p>
+                </div>
+              </div>
+              <div className="lesson-layout">
+                <nav className="lesson-nav">
+                  {lessons.map((item, index) => (
+                    <button
+                      className={lesson === index ? "chosen" : ""}
+                      key={item.title}
+                      onClick={() => setLesson(index)}
+                    >
+                      <span>0{index + 1}</span>
+                      {item.title}
+                      <ChevronRight size={16} />
+                    </button>
+                  ))}
+                </nav>
+                <article className="lesson">
+                  <span className="eyebrow">
+                    RUBY NA PRÁTICA · 0{lesson + 1}
+                  </span>
+                  <h2>{lessons[lesson].title}</h2>
+                  <p>{lessons[lesson].body}</p>
+                  <div className="code-file">
+                    <Terminal size={15} />
+                    {lessons[lesson].file}
+                  </div>
+                  <pre>
+                    <code>{lessons[lesson].code}</code>
+                  </pre>
+                  <div className="lesson-note">
+                    <BookOpen size={18} />
+                    <p>
+                      O código completo está na pasta <strong>api/</strong> do
+                      projeto. Siga o <strong>docs/APRENDENDO_RUBY.md</strong>{" "}
+                      para executar exemplos e testes.
+                    </p>
+                  </div>
+                  <button
+                    className="secondary"
+                    onClick={() => setLesson((lesson + 1) % lessons.length)}
+                  >
+                    Próximo conceito <ChevronRight size={16} />
+                  </button>
+                </article>
+              </div>
+              <div className="endpoint-list">
+                <h3>O contrato do catálogo</h3>
+                {[
+                  ["GET", "/api/v1/books", "Listar livros"],
+                  ["GET", "/api/v1/books/:id", "Consultar um livro"],
+                  ["POST", "/api/v1/books", "Cadastrar · 201"],
+                  ["PATCH", "/api/v1/books/:id", "Atualizar · 200"],
+                  ["DELETE", "/api/v1/books/:id", "Excluir · 204"],
+                ].map(([method, path, description]) => (
+                  <div key={method + path}>
+                    <span>{method}</span>
+                    <code>{path}</code>
+                    <small>{description}</small>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+          {demoMode && (
+            <p className="demo-note">
+              Modo demonstração: os dados ficam apenas neste navegador. Para
+              praticar com a API Ruby e o banco SQLite, execute o projeto
+              completo seguindo o README.
+            </p>
+          )}
+          <footer>
+            <span>
+              margem. <span>Um espaço para livros e aprendizado.</span>
+            </span>
+            <span>
+              Next.js + TypeScript <i /> Ruby on Rails
+            </span>
+          </footer>
+        </main>
+      </div>
+      {notice && (
+        <div className="toast" role="status">
+          <Check size={18} />
+          {notice}
+        </div>
+      )}
+      <dialog
+        ref={dialog}
+        onCancel={(e) => {
+          if (busy) e.preventDefault();
+          else setModal(null);
+        }}
+        onClick={(e) => {
+          if (e.target === dialog.current && !busy) setModal(null);
+        }}
+      >
+        <div className="modal-content">
+          <button
+            className="close"
+            aria-label="Fechar janela"
+            disabled={busy}
+            onClick={() => setModal(null)}
+          >
+            <X size={20} />
+          </button>
+          {modal === "form" && (
+            <>
+              <span className="eyebrow">SEU ACERVO</span>
+              <h2>{selected ? "Editar livro" : "Uma nova história."}</h2>
+              <p>
+                Preencha os dados para{" "}
+                {selected ? "atualizar" : "adicionar um livro ao"} seu catálogo.
+              </p>
+              <form onSubmit={submit}>
+                <label>
+                  Título
+                  <input
+                    autoFocus
+                    required
+                    maxLength={180}
+                    value={form.title}
+                    onChange={(e) =>
+                      setForm({ ...form, title: e.target.value })
+                    }
+                  />
+                </label>
+                <label>
+                  Autor
+                  <input
+                    required
+                    maxLength={120}
+                    value={form.author}
+                    onChange={(e) =>
+                      setForm({ ...form, author: e.target.value })
+                    }
+                  />
+                </label>
+                <div className="form-row">
+                  <label>
+                    Categoria
+                    <select
+                      value={form.category}
+                      onChange={(e) =>
+                        setForm({ ...form, category: e.target.value })
+                      }
+                    >
+                      {categories.map((item) => (
+                        <option key={item}>{item}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    ISBN (10 ou 13 dígitos)
+                    <input
+                      required
+                      pattern="[0-9]{10}|[0-9]{13}"
+                      value={form.isbn}
+                      onChange={(e) =>
+                        setForm({ ...form, isbn: e.target.value })
+                      }
+                    />
+                  </label>
+                </div>
+                <div className="form-row">
+                  <label>
+                    Preço (R$)
+                    <input
+                      required
+                      inputMode="decimal"
+                      type="number"
+                      min="0"
+                      max="1000000"
+                      step="0.01"
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    Exemplares
+                    <input
+                      required
+                      type="number"
+                      min="0"
+                      max="1000000"
+                      step="1"
+                      value={form.stock}
+                      onChange={(e) =>
+                        setForm({ ...form, stock: Number(e.target.value) })
+                      }
+                    />
+                  </label>
+                </div>
+                <label>
+                  Descrição
+                  <textarea
+                    maxLength={2000}
+                    rows={3}
+                    value={form.description}
+                    onChange={(e) =>
+                      setForm({ ...form, description: e.target.value })
+                    }
+                  />
+                </label>
+                {formError && (
+                  <p className="form-error" role="alert">
+                    {formError}
+                  </p>
+                )}
+                <div className="modal-actions">
+                  <button
+                    type="button"
+                    className="secondary"
+                    disabled={busy}
+                    onClick={() => setModal(null)}
+                  >
+                    Cancelar
+                  </button>
+                  <button className="primary" disabled={busy}>
+                    {saving
+                      ? "Salvando…"
+                      : selected
+                        ? "Salvar alterações"
+                        : "Adicionar livro"}
+                  </button>
+                </div>
+              </form>
+            </>
+          )}
+          {modal === "detail" && selected && (
+            <>
+              <span className="eyebrow">DETALHES DO LIVRO</span>
+              <h2>{selected.title}</h2>
+              <p>por {selected.author}</p>
+              <span className="category-tag">{selected.category}</span>
+              <p className="description">
+                {selected.description ||
+                  "Este livro ainda não tem uma descrição."}
+              </p>
+              <dl>
+                <div>
+                  <dt>Preço de venda</dt>
+                  <dd>{money(selected.price_cents)}</dd>
+                </div>
+                <div>
+                  <dt>Estoque</dt>
+                  <dd>{selected.stock} exemplares</dd>
+                </div>
+                <div>
+                  <dt>ISBN</dt>
+                  <dd>{selected.isbn}</dd>
+                </div>
+              </dl>
+              <button className="primary" onClick={() => edit(selected)}>
+                <Pencil size={16} /> Editar livro
+              </button>
+            </>
+          )}
+          {modal === "delete" && selected && (
+            <>
+              <span className="delete-icon">
+                <Trash2 size={25} />
+              </span>
+              <h2>Excluir este livro?</h2>
+              <p>
+                <strong>{selected.title}</strong> será removido do catálogo.
+                Essa ação não pode ser desfeita.
+              </p>
+              {deleteError && (
+                <p className="form-error" role="alert">
+                  {deleteError}
+                </p>
+              )}
+              <div className="modal-actions">
+                <button
+                  className="secondary"
+                  disabled={busy}
+                  onClick={() => setModal(null)}
+                >
+                  Manter livro
+                </button>
+                <button
+                  className="danger"
+                  disabled={busy}
+                  onClick={() => void remove()}
+                >
+                  {deleting ? "Excluindo…" : "Excluir livro"}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </dialog>
+      <span className="sr-only">
+        {demoMode
+          ? "Dados desta demonstração ficam somente neste navegador. A API Rails é executada separadamente."
+          : "Dados fornecidos pela API Ruby."}
+      </span>
+    </div>
+  );
 }
