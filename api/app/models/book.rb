@@ -23,6 +23,19 @@ class Book < ApplicationRecord
   # order(:title, :id) ordena primeiro por título e depois por id.
   scope :alphabetical, -> { order(:title, :id) }
 
+  # Sem termo, devolve a relação inteira. Com termo, restringe título, autor ou ISBN.
+  scope :search, ->(term) {
+    if term.blank?
+      all
+    else
+      like = "%#{sanitize_sql_like(term.to_s.strip.downcase)}%"
+      where(
+        'LOWER(title) LIKE :like OR LOWER(author) LIKE :like OR LOWER(isbn) LIKE :like',
+        like: like
+      )
+    end
+  }
+
   private
 
   def normalize_text
