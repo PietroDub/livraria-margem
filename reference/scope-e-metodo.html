@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ficha: scope e método</title>
+  <link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+  <main>
+    <header class="course">
+      <p class="kicker">Referência · Active Record na Margem</p>
+      <h1>Scope e método</h1>
+      <p class="lede">Compressão das seções 17.1 e 17.2 do guia, aplicada a <code>Book.search</code>. A lição é <a href="../lessons/0002-scope-com-if.html">Scope com if</a>.</p>
+    </header>
+
+    <p>Fonte: <a href="https://guides.rubyonrails.org/active_record_querying.html#scopes">Active Record Query Interface, §17</a>. Implementação no Rails 8.1: <code>scope</code> em <code>ActiveRecord::Scoping::Named</code>, execução em <code>Relation#_exec_scope</code>.</p>
+
+    <table>
+      <thead>
+        <tr><th>Corpo</th><th>scope</th><th>def self</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>where(...)</code></td>
+          <td>relação</td>
+          <td>relação</td>
+        </tr>
+        <tr>
+          <td><code>all</code></td>
+          <td>relação corrente, clonada</td>
+          <td>relação corrente, clonada</td>
+        </tr>
+        <tr>
+          <td><code>nil</code> ou <code>false</code></td>
+          <td>relação corrente (<code>|| self</code> na relação)</td>
+          <td><code>nil</code>, e <code>.page</code> quebra</td>
+        </tr>
+        <tr>
+          <td><code>self</code> dentro de <code>def self</code></td>
+          <td>não se aplica</td>
+          <td>a classe <code>Book</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Cadeia do index</h2>
+    <pre><code>Book.alphabetical.search(params[:q]).page(params[:page])</code></pre>
+    <p>Termo em branco: <code>all</code> preserva <code>order(:title, :id)</code>. Termo presente: <code>where</code> entra na mesma relação. <code>sanitize_sql_like</code> escapa <code>%</code> e <code>_</code> do texto digitado antes do <code>LIKE</code>.</p>
+
+    <footer class="course">
+      <nav>
+        <a href="../lessons/0002-scope-com-if.html">Lição 0002</a>
+        <a href="../lessons/0001-valores-sem-o-model.html">Lição 0001</a>
+        <a href="https://guides.rubyonrails.org/active_record_querying.html#using-conditionals">Guia 17.2</a>
+      </nav>
+    </footer>
+  </main>
+</body>
+</html>

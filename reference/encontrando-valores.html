@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ficha: encontrando valores</title>
+  <link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+  <main>
+    <header class="course">
+      <p class="kicker">Referência · Active Record na Margem</p>
+      <h1>Encontrando valores</h1>
+      <p class="lede">Compressão da seção 3.4 do guia, com <code>Book</code> e <code>User</code>. A lição que treina a escolha é <a href="../lessons/0001-valores-sem-o-model.html">Valores sem o model</a>.</p>
+    </header>
+
+    <p>Fonte: <a href="https://guides.rubyonrails.org/active_record_querying.html#finding-records-and-values">Active Record Query Interface, §3.4</a>. Contratos de <code>pluck</code>, <code>pick</code> e <code>ids</code>: <a href="https://api.rubyonrails.org/classes/ActiveRecord/Calculations.html">ActiveRecord::Calculations</a>.</p>
+
+    <h2>O que devolver</h2>
+    <table>
+      <thead>
+        <tr><th>Método</th><th>Retorno</th><th>SQL na hora</th><th>Encadeia depois</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>pluck(:isbn)</code></td>
+          <td><code>Array</code> de valores</td>
+          <td>sim</td>
+          <td>não</td>
+        </tr>
+        <tr>
+          <td><code>pluck(:id, :title)</code></td>
+          <td><code>Array</code> de arrays</td>
+          <td>sim</td>
+          <td>não</td>
+        </tr>
+        <tr>
+          <td><code>pick(:id)</code></td>
+          <td>valor ou <code>nil</code></td>
+          <td>sim</td>
+          <td>não</td>
+        </tr>
+        <tr>
+          <td><code>pick(:id, :title)</code></td>
+          <td>array de uma linha, ou <code>nil</code></td>
+          <td>sim</td>
+          <td>não</td>
+        </tr>
+        <tr>
+          <td><code>ids</code></td>
+          <td><code>Array</code> da chave primária</td>
+          <td>sim</td>
+          <td>não</td>
+        </tr>
+        <tr>
+          <td><code>select(:isbn)</code></td>
+          <td>relação de models</td>
+          <td>ao carregar</td>
+          <td>sim</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Forma curta</h2>
+    <pre><code>Book.where(category: "Poesia").pluck(:isbn)
+User.where(email: email).pick(:id)     # limit(1).pluck(:id).first
+Book.alphabetical.ids                  # pluck da primary key
+Book.limit(2).pluck(:title)            # limite antes
+Book.pluck(:title).limit(2)            # NoMethodError</code></pre>
+
+    <h2>O que não vem junto</h2>
+    <ul>
+      <li>Nenhum objeto <code>Book</code> ou <code>User</code>. Método de instância e atributo sobrescrito não participam.</li>
+      <li><code>includes</code> já presente na relação é executado junto com o <code>pluck</code>. Para evitar: <code>unscope(:includes).pluck(...)</code>.</li>
+      <li><code>ids</code> segue <code>primary_key</code>. Aqui é <code>id</code>. Não é <code>isbn</code> nem <code>user_id</code>.</li>
+    </ul>
+
+    <h2>Saída em SQL cru</h2>
+    <p>Mesma seção do guia. Use quando a interface não expressa a consulta. Não é o padrão dos controllers da Margem.</p>
+    <table>
+      <thead>
+        <tr><th>Método</th><th>Devolve</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>Book.find_by_sql("SELECT ...")</code></td>
+          <td><code>Array</code> de <code>Book</code>, mesmo para uma linha</td>
+        </tr>
+        <tr>
+          <td><code>Book.lease_connection.select_all("SELECT ...").to_a</code></td>
+          <td><code>Array</code> de <code>Hash</code>, sem instanciar model</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <footer class="course">
+      <nav>
+        <a href="../lessons/0001-valores-sem-o-model.html">Lição 0001</a>
+        <a href="https://guides.rubyonrails.org/active_record_querying.html#pluck">pluck</a>
+        <a href="https://guides.rubyonrails.org/active_record_querying.html#pick">pick</a>
+        <a href="https://guides.rubyonrails.org/active_record_querying.html#ids">ids</a>
+      </nav>
+    </footer>
+  </main>
+</body>
+</html>

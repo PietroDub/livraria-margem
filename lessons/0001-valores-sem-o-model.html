@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Valores sem o model</title>
+  <link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+  <main>
+    <header class="course">
+      <p class="kicker">Lição 0001 · Active Record na Margem</p>
+      <h1>Valores sem o model</h1>
+      <p class="lede">Quando a API precisa de um ISBN, um id ou uma lista de títulos, peça a coluna. Não carregue um <code>Book</code> para jogar o resto fora.</p>
+    </header>
+
+    <p><code>Book</code> e <code>User</code> herdam a interface de consulta porque são subclasses de <code>ApplicationRecord</code>. Essa classe chama <code>primary_abstract_class</code>: vira a classe abstrata da aplicação, liga o banco primário e não tem tabela própria. Quem consulta é <code>Book</code>, não <code>ApplicationRecord</code>. A definição está na <a href="https://api.rubyonrails.org/classes/ActiveRecord/Inheritance/ClassMethods.html#method-i-primary_abstract_class">API de <code>primary_abstract_class</code></a>.</p>
+
+    <pre><code>class ApplicationRecord &lt; ActiveRecord::Base
+  primary_abstract_class
+end</code></pre>
+
+    <h2>Três retornos</h2>
+    <p>O guia, na seção <a href="https://guides.rubyonrails.org/active_record_querying.html#finding-records-and-values">Finding Records and Values</a>, separa métodos que devolvem valores crus. Três bastam para a Margem. Os três disparam a SQL na hora.</p>
+
+    <table>
+      <thead>
+        <tr><th>Chamada</th><th>Devolve</th><th>Use quando</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>pluck</code></td>
+          <td>Array de valores</td>
+          <td>várias linhas, uma ou mais colunas</td>
+        </tr>
+        <tr>
+          <td><code>pick</code></td>
+          <td>o valor da primeira linha, ou <code>nil</code></td>
+          <td>você já sabe que quer uma linha</td>
+        </tr>
+        <tr>
+          <td><code>ids</code></td>
+          <td>Array da chave primária</td>
+          <td>só os <code>id</code> da relação</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><code>pluck</code> aceita colunas e devolve os valores no tipo da coluna, sem construir objetos <code>Book</code>. Por isso um método redefinido no model não roda: o guia mostra um <code>first_name</code> sobrescrito que aparece em <code>select</code> + <code>map</code> e some no <code>pluck</code>.</p>
+
+    <pre><code>Book.where(category: "Poesia").pluck(:isbn)
+# =&gt; ["9788500000001", "9788500000002"]
+
+Book.where(category: "Poesia").pluck(:id, :title)
+# =&gt; [[3, "O guardador de rebanhos"], [4, "Alguma poesia"]]</code></pre>
+
+    <p><code>pick</code> é o atalho de <code>limit(1).pluck(...).first</code>. Uma coluna devolve o valor; várias colunas devolvem um array dessa única linha.</p>
+
+    <pre><code>User.where(email: email).pick(:id)
+# =&gt; 12   ou nil
+
+User.find_by(email: email)
+# =&gt; #&lt;User id: 12, ...&gt;   ou nil</code></pre>
+
+    <p>O login da Margem usa <code>find_by</code> porque precisa do <code>User</code> inteiro para a senha. <code>pick(:id)</code> serviria se a próxima linha só usasse o número.</p>
+
+    <p><code>ids</code> é <code>pluck</code> da chave primária. Em <code>Book</code> e <code>User</code> essa chave é <code>id</code>. Se a chave tivesse outro nome, <code>ids</code> acompanharia esse nome.</p>
+
+    <pre><code>Book.where(category: "Tecnologia").ids
+# =&gt; [8, 9, 14]</code></pre>
+
+    <h2>A cadeia acaba</h2>
+    <p><code>Book.alphabetical.search(params[:q])</code> no <code>index</code> ainda é uma relação: dá para continuar com <code>page</code>. <code>pluck</code>, <code>pick</code> e <code>ids</code> executam e devolvem <code>Array</code> ou um valor. O que vier depois não é consulta.</p>
+
+    <pre><code>Book.limit(1).pluck(:isbn)          # funciona
+Book.pluck(:isbn).limit(1)          # NoMethodError: limit em Array</code></pre>
+
+    <p class="note"><code>select</code> continua sendo relação e ainda instancia models com as colunas pedidas. <code>pluck</code> não. O guia também avisa: <code>pluck</code> numa relação que já tem <code>includes</code> dispara o eager load mesmo sem precisar das associações. <code>unscope(:includes)</code> tira isso antes do <code>pluck</code>.</p>
+
+    <h2>Recupere sem olhar acima</h2>
+    <p>Responda uma vez. As quatro opções de cada pergunta têm o mesmo número de palavras.</p>
+    <div id="quiz" class="quiz"></div>
+
+    <h2>Confira no console</h2>
+    <p>Com a API no ar, a partir da raiz do repositório:</p>
+    <pre><code>docker compose exec api bundle exec rails console</code></pre>
+    <ol class="practice">
+      <li><code>Book.limit(1).class</code> deve imprimir uma relação, não um <code>Book</code>.</li>
+      <li><code>Book.limit(1).pluck(:isbn).class</code> deve ser <code>Array</code>.</li>
+      <li><code>Book.pick(:isbn).class</code> deve ser <code>String</code> ou <code>NilClass</code>.</li>
+      <li><code>Book.limit(1).ids</code> deve ser um array com um inteiro, ou vazio se não houver livro.</li>
+    </ol>
+    <p>Se o segundo item não for <code>Array</code>, a consulta não disparou do jeito que o guia descreve. Manda o que apareceu.</p>
+
+    <h2>Leia a fonte</h2>
+    <p>A fonte desta lição é a seção <a href="https://guides.rubyonrails.org/active_record_querying.html#finding-records-and-values">3.4 Finding Records and Values</a> do guia Active Record Query Interface. Leia <code>pluck</code>, <code>pick</code> e <code>ids</code> lá e compare com a tabela acima. <code>find_by_sql</code> e <code>select_all</code> estão na mesma seção e na <a href="../reference/encontrando-valores.html">ficha</a>; não são o caminho do <code>BooksController</code>.</p>
+
+    <footer class="course">
+      <p>Se algo ficou torto, pergunta. O ponto desta aula é a escolha entre <code>pluck</code>, <code>pick</code> e <code>ids</code>, e o fato de a cadeia acabar ali.</p>
+      <nav>
+        <a href="../reference/encontrando-valores.html">Ficha: encontrando valores</a>
+        <a href="0002-scope-com-if.html">Lição 0002</a>
+        <a href="https://guides.rubyonrails.org/active_record_querying.html#finding-records-and-values">Guia Rails 3.4</a>
+      </nav>
+    </footer>
+  </main>
+
+  <script type="application/json" id="quiz-data">
+  [
+    {
+      "prompt": "Book.where(category: \"Poesia\").pluck(:isbn) devolve o quê?",
+      "options": [
+        "A relação lazy sem consulta feita",
+        "ISBN único da primeira linha só",
+        "Array dos ISBNs com consulta feita"
+      ],
+      "answer": 2,
+      "why": "pluck dispara a SQL e devolve um Array de valores, sem instanciar Book."
+    },
+    {
+      "prompt": "Onde o limit precisa estar em relação ao pluck?",
+      "options": [
+        "Antes, porque pluck já devolve Array",
+        "Depois, porque pluck ainda é relação",
+        "No meio, porque pluck aceita blocos"
+      ],
+      "answer": 0,
+      "why": "O guia mostra Customer.pluck(:first_name).limit(1) quebrando: limit não existe em Array."
+    },
+    {
+      "prompt": "Book.ids extrai qual coluna da relação?",
+      "options": [
+        "O ISBN único existente nesta tabela",
+        "A chave primária gravada na tabela",
+        "O user_id existente do dono atual"
+      ],
+      "answer": 1,
+      "why": "ids faz pluck da primary key. Em books e users ela se chama id."
+    },
+    {
+      "prompt": "User.where(email: email).pick(:id) difere de find_by porque",
+      "options": [
+        "Devolve a relação, não um valor",
+        "Devolve o User, nunca um número",
+        "Devolve o número, nunca o User"
+      ],
+      "answer": 2,
+      "why": "pick é limit(1).pluck.first: a coluna pedida, ou nil. find_by devolve o model ou nil."
+    }
+  ]
+  </script>
+  <script src="../assets/quiz.js"></script>
+</body>
+</html>

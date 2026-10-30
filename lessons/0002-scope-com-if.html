@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scope com if</title>
+  <link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+  <main>
+    <header class="course">
+      <p class="kicker">Lição 0002 · Active Record na Margem</p>
+      <h1>Scope com if</h1>
+      <p class="lede"><code>Book.search</code> pode continuar scope. O <code>if</code> não é o critério. O critério é cada ramo devolver uma relação, para <code>alphabetical</code> e <code>page</code> continuarem na mesma consulta.</p>
+    </header>
+
+    <p>No guia, <a href="https://guides.rubyonrails.org/active_record_querying.html#passing-in-arguments">scope com argumento</a> é a mesma coisa que um class method. A API chama isso de açúcar sintático: <code>scope :nome, -&gt; { ... }</code> define <code>def self.nome</code>. A seção <a href="https://guides.rubyonrails.org/active_record_querying.html#using-conditionals">Using Conditionals</a> mostra um <code>if</code> dentro do scope.</p>
+
+    <h2>O que o if não pode devolver</h2>
+    <p>Um scope cujo corpo devolve <code>nil</code> ou <code>false</code> vira a relação corrente. O Rails faz isso em <code>_exec_scope</code>: <code>instance_exec(...) || self</code>, e esse <code>self</code> é a relação. Um class method que cai no mesmo <code>if</code> devolve <code>nil</code>. Aí <code>.page</code> chama método em <code>nil</code> e estoura <code>NoMethodError</code>. O guia escreve esse aviso na seção 17.2.</p>
+
+    <pre><code>scope :created_before, -&gt;(time) { where(created_at: ...time) if time.present? }
+# tempo ausente: ainda é relação
+
+def self.created_before(time)
+  where(created_at: ...time) if time.present?
+end
+# tempo ausente: nil</code></pre>
+
+    <h2>O search da Margem</h2>
+    <p>Os dois ramos já devolvem relação: <code>all</code> sem termo, <code>where</code> com termo. Por isso o <code>index</code> pode escrever isto com o termo vazio:</p>
+
+    <pre><code>Book.alphabetical.search(params[:q]).page(params[:page])</code></pre>
+
+    <p><code>all</code>, chamado com uma relação já em curso, clona essa relação. A ordem de <code>alphabetical</code> permanece e o <code>page</code> entra nela. Está em <code>Scoping::Named::ClassMethods#all</code> no Rails 8.1: se existe <code>current_scope</code> do mesmo model, o retorno é <code>scope.clone</code>.</p>
+
+    <p>Um <code>def self.search</code> com os mesmos <code>all</code> e <code>where</code> se comporta igual. A relação, ao receber <code>search</code>, executa <code>scoping { model.search(...) }</code>. Durante esse bloco, <code>all</code> e <code>where</code> enxergam a cadeia anterior.</p>
+
+    <p class="note">O exemplo do guia que devolve <code>self</code> no class method devolve a classe <code>Book</code>, porque dentro de <code>def self.search</code> o <code>self</code> é a classe. Nessa cadeia do index, a ordem de <code>alphabetical</code> ficaria de fora. O ramo vazio deste model é <code>all</code>.</p>
+
+    <h2>Recupere sem olhar acima</h2>
+    <div id="quiz" class="quiz"></div>
+
+    <h2>Leia a fonte</h2>
+    <p>Seção <a href="https://guides.rubyonrails.org/active_record_querying.html#scopes">17. Scopes</a> do guia, em especial Passing in Arguments e Using Conditionals. A ficha está em <a href="../reference/scope-e-metodo.html">scope e método</a>.</p>
+
+    <footer class="course">
+      <p>Se a leitura do corpo ainda te incomodar, a troca para <code>def self.search</code> é estilo. O ramo sem termo continua <code>all</code>. Pergunta o que ficou torto.</p>
+      <nav>
+        <a href="0001-valores-sem-o-model.html">Lição 0001</a>
+        <a href="../reference/scope-e-metodo.html">Ficha: scope e método</a>
+        <a href="https://guides.rubyonrails.org/active_record_querying.html#using-conditionals">Guia 17.2</a>
+      </nav>
+    </footer>
+  </main>
+  <script type="application/json" id="quiz-data">
+  [
+    {
+      "prompt": "Um if no corpo de Book.search impede o scope?",
+      "options": [
+        "Um if no corpo desqualifica o scope",
+        "O guia também documenta if no scope",
+        "Só class method pode usar esse if"
+      ],
+      "answer": 1,
+      "why": "A seção Using Conditionals mostra scope com if. O contrato é o retorno, uma relação ou nil."
+    },
+    {
+      "prompt": "Class method com if que não devolve where, e depois .page. O que ocorre?",
+      "options": [
+        "A cadeia page quebra com NoMethodError",
+        "Rails troca nil retornado por all",
+        "A busca segue sem aplicar filtro"
+      ],
+      "answer": 0,
+      "why": "O guia diz que o class method devolve nil, e a cadeia quebra. No scope, nil vira a relação corrente."
+    },
+    {
+      "prompt": "Termo vazio no index. O all do search faz o que com alphabetical?",
+      "options": [
+        "Perde order e começa outra relação",
+        "Mantém o order já aplicado antes",
+        "Devolve nil e quebra o page"
+      ],
+      "answer": 1,
+      "why": "all com current_scope do mesmo model clona essa relação. A ordem de alphabetical segue para o page."
+    }
+  ]
+  </script>
+  <script src="../assets/quiz.js"></script>
+</body>
+</html>
