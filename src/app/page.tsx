@@ -58,7 +58,17 @@ const lessons = [
 ];
 
 export default function Home() {
-  const { books, loading, error, reload, upsert, drop } = useListBooks();
+  const {
+    books,
+    pagination,
+    page,
+    setPage,
+    loading,
+    error,
+    reload,
+    upsert,
+    drop,
+  } = useListBooks();
   const {
     form,
     setForm,
@@ -89,6 +99,8 @@ export default function Home() {
     outOfStock,
     clear,
   } = useBookFilters(books);
+  const totalCount = pagination?.total_count ?? books.length;
+  const totalPages = pagination?.total_pages ?? 1;
   const [tab, setTab] = useState<"catalog" | "learn">("catalog");
   const [notice, setNotice] = useState("");
   const [modal, setModal] = useState<"form" | "detail" | "delete" | null>(null);
@@ -173,7 +185,7 @@ export default function Home() {
             className={tab === "catalog" ? "active" : ""}
             onClick={() => setTab("catalog")}
           >
-            <Library size={19} /> Catálogo de livros <span>{books.length}</span>
+            <Library size={19} /> Catálogo de livros <span>{totalCount}</span>
           </button>
           <button
             className={tab === "learn" ? "active" : ""}
@@ -249,7 +261,7 @@ export default function Home() {
                     Títulos no catálogo <Library size={18} />
                   </span>
                   <strong>
-                    {loading ? "—" : String(books.length).padStart(2, "0")}
+                    {loading ? "—" : String(totalCount).padStart(2, "0")}
                   </strong>
                   <small>Histórias esperando por leitores</small>
                 </div>
@@ -272,7 +284,7 @@ export default function Home() {
                 <div className="section-title">
                   <div>
                     <h2>
-                      Seu catálogo <span>{books.length} livros</span>
+                      Seu catálogo <span>{totalCount} livros</span>
                     </h2>
                     <p>
                       Cada livro tem seu lugar. Encontre, edite e cuide do seu
@@ -442,11 +454,42 @@ export default function Home() {
                 )}
                 <div className="table-footer">
                   <span>
-                    Mostrando {filtered.length} de {books.length} livros
+                    Página {page} de {totalPages} · {filtered.length} nesta
+                    página, {totalCount} no catálogo
                   </span>
-                  <span>
-                    Feito para simplificar seu dia a dia <BookOpen size={14} />
-                  </span>
+                  {/* Paginacao */}
+                  {totalPages > 1 && (
+                    <nav className="pager" aria-label="Páginas do catálogo">
+                      <button
+                        type="button"
+                        disabled={loading || page <= 1}
+                        onClick={() => setPage(page - 1)}
+                      >
+                        Anterior
+                      </button>
+                      {Array.from(
+                        { length: totalPages },
+                        (_, index) => index + 1,
+                      ).map((number) => (
+                        <button
+                          type="button"
+                          key={number}
+                          disabled={loading}
+                          aria-current={number === page ? "page" : undefined}
+                          onClick={() => setPage(number)}
+                        >
+                          {number}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        disabled={loading || page >= totalPages}
+                        onClick={() => setPage(page + 1)}
+                      >
+                        Próxima
+                      </button>
+                    </nav>
+                  )}
                 </div>
               </section>
               <section className="guide-banner">
