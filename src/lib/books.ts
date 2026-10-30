@@ -32,7 +32,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 export const booksApi = {
   list: async (): Promise<Book[]> => demoMode ? readLocal() : request<Book[]>('/books'),
-  listPage: async (page: number): Promise<BookPage> => request<BookPage>('/books?page=${page}'),
+  listPage: async (page: number): Promise<BookPage> => request<BookPage>(`/books?page=${page}`),
   save: async (input: BookInput, id?: number): Promise<Book> => {
     if (!demoMode) return request<Book>(id ? `/books/${id}` : '/books', { method: id ? 'PATCH' : 'POST', body: JSON.stringify({ book: input }) });
     const books = readLocal();
