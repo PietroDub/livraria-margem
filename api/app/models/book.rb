@@ -24,6 +24,8 @@ class Book < ApplicationRecord
   scope :alphabetical, -> { order(:title, :id) }
 
   # Sem termo, devolve a relação inteira. Com termo, restringe título, autor ou ISBN.
+  # scope utilizado para buscar ou filtrar varios objetos
+  
   scope :search, ->(term) {
     if term.blank?
       all
@@ -38,7 +40,11 @@ class Book < ApplicationRecord
 
   scope :in_stock, -> { where('stock > 0') }
 
-  scope: format_price, -> { format('%.2f', price_cents / 100.0) }
+  # método para formatar o preço do livro
+  # def é utilizado quando trabalha com um objeto específico
+  def format_price
+    format('%.2f', price_cents / 100.0)
+  end
 
   private
 

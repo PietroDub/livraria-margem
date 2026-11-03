@@ -20,11 +20,11 @@ module Api
 
       # POST /api/v1/books
       def create
-        book = Book.new(book_params)
-        if book.save
+        @book = Book.new(book_params)
+        if @book.save
           render formats: :json, status: :created
         else
-          render json: { errors: book.errors.full_messages }, status: :unprocessable_entity
+          render json: { errors: @book.errors.full_messages }, status: :unprocessable_entity
         end
       end
 
