@@ -2,6 +2,8 @@
 
 ## Knowledge
 
+- [Guide: Active Record Basics](https://guides.rubyonrails.org/active_record_basics.html)
+  Modelo, convenção de nomes e CRUD (`new`, `create`, `save`, `find`, `update`, `destroy`). Use for: o que o model herda antes de qualquer scope. Seção já usada: [CRUD](https://guides.rubyonrails.org/active_record_basics.html#crud-reading-and-writing-data).
 - [Guide: Active Record Query Interface](https://guides.rubyonrails.org/active_record_querying.html)
   Guia oficial da interface de consulta. Use for: qualquer método de busca, relação, escopo ou cálculo. Âncoras já usadas: [Finding Records and Values](https://guides.rubyonrails.org/active_record_querying.html#finding-records-and-values) e [Scopes](https://guides.rubyonrails.org/active_record_querying.html#scopes).
 - [API: `ActiveRecord::Calculations`](https://api.rubyonrails.org/classes/ActiveRecord/Calculations.html)

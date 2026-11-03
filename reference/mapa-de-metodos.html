@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ficha: mapa de métodos</title>
+  <link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+  <main>
+    <header class="course">
+      <p class="kicker">Referência · Active Record na Margem</p>
+      <h1>Mapa de métodos do Book</h1>
+      <p class="lede">O que entra no model e o que já vem do Active Record. A lição deste passo é <a href="../lessons/0003-dois-tipos-de-metodo.html">Dois tipos de método</a>.</p>
+    </header>
+
+    <p>Fontes: <a href="https://guides.rubyonrails.org/active_record_basics.html#crud-reading-and-writing-data">Active Record Basics, §5 CRUD</a> e <a href="https://guides.rubyonrails.org/active_record_querying.html#scopes">Query Interface, §17 Scopes</a>. Os exemplos de chamada são os do <code>BooksController</code>.</p>
+
+    <h2>Escrito em book.rb</h2>
+    <table>
+      <thead>
+        <tr><th>Nome</th><th>Devolve</th><th>Encadeia</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>alphabetical</code></td>
+          <td>relação com <code>order(:title, :id)</code></td>
+          <td>sim</td>
+        </tr>
+        <tr>
+          <td><code>search(term)</code></td>
+          <td>relação: <code>all</code> ou <code>where</code></td>
+          <td>sim</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Herdado, usado no controller</h2>
+    <table>
+      <thead>
+        <tr><th>Verbo</th><th>Chamada na Margem</th><th>Devolve</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Read, vários</td>
+          <td><code>Book.alphabetical.search(q).page</code></td>
+          <td>relação</td>
+        </tr>
+        <tr>
+          <td>Read, um</td>
+          <td><code>Book.find(id)</code></td>
+          <td><code>Book</code>, ou <code>RecordNotFound</code></td>
+        </tr>
+        <tr>
+          <td>Create</td>
+          <td><code>Book.new</code> depois <code>book.save</code></td>
+          <td><code>Book</code> sem id, depois <code>true</code> ou <code>false</code></td>
+        </tr>
+        <tr>
+          <td>Update</td>
+          <td><code>book.update(attrs)</code></td>
+          <td><code>true</code> ou <code>false</code></td>
+        </tr>
+        <tr>
+          <td>Delete</td>
+          <td><code>book.destroy!</code></td>
+          <td>o registro removido, ou erro</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Quem recebe o próximo método</h2>
+    <p>O ponto chama o método no objeto que está à esquerda. A regra está em <a href="https://guides.rubyonrails.org/active_record_querying.html#understanding-method-chaining">Understanding Method Chaining</a>: a cadeia continua quando o método anterior devolveu uma <code>ActiveRecord::Relation</code>. Quem devolve um registro fica no fim.</p>
+    <pre><code>Book.alphabetical.where(category: "Poesia")
+# alphabetical devolve Relation; where é método dela
+
+Book.find(1).where(category: "Poesia")
+# find devolve Book; a instância não tem where</code></pre>
+    <p><code>where</code>, <code>order</code> e <code>find</code> são herdados. <code>alphabetical</code> só dá nome ao <code>order(:title, :id)</code>. <code>category: "Poesia"</code> é um argumento nomeado: coluna e valor, que o <code>where</code> vira <code>WHERE books.category = 'Poesia'</code>.</p>
+
+    <p class="note"><code>new</code> não grava. <code>create</code> grava e devolve o objeto mesmo quando a validação falha. <code>save</code> e <code>update</code> devolvem <code>false</code> nessa falha. O par com <code>!</code> levanta <code>RecordInvalid</code>. Isso é a seção Validations do mesmo guia; a lição de Create retoma.</p>
+
+    <footer class="course">
+      <nav>
+        <a href="../lessons/0003-dois-tipos-de-metodo.html">Lição 0003</a>
+        <a href="../reference/scope-e-metodo.html">Scope e método</a>
+        <a href="https://guides.rubyonrails.org/active_record_basics.html#create">Create</a>
+      </nav>
+    </footer>
+  </main>
+</body>
+</html>

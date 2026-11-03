@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dois tipos de método</title>
+  <link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+  <main>
+    <header class="course">
+      <p class="kicker">Lição 0003 · Active Record na Margem</p>
+      <h1>Dois tipos de método</h1>
+      <p class="lede">No <code>Book</code> convivem métodos que você escreveu e métodos que o Active Record entrega. O passo de hoje é separar os dois pelo que devolvem.</p>
+    </header>
+
+    <p>O guia de <a href="https://guides.rubyonrails.org/active_record_basics.html#crud-reading-and-writing-data">Active Record Basics, seção CRUD</a>, diz que o Active Record cria os métodos de criar, ler, atualizar e apagar. <code>Book</code> herda isso porque <code>ApplicationRecord</code> herda de <code>ActiveRecord::Base</code>. Você não declara <code>find</code>, <code>new</code>, <code>save</code>, <code>update</code> nem <code>destroy</code> em <code>book.rb</code>.</p>
+
+    <p>O que você declara ali, para consulta, são os scopes <code>alphabetical</code> e <code>search</code>. Scope é um class method com nome de consulta. O corpo devolve uma relação, então dá para continuar a cadeia.</p>
+
+    <table>
+      <thead>
+        <tr><th>Chamada no controller</th><th>Quem define</th><th>Devolve</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>Book.alphabetical.search(...)</code></td>
+          <td>você, no model</td>
+          <td>relação, ainda dá para <code>.page</code></td>
+        </tr>
+        <tr>
+          <td><code>Book.find(params[:id])</code></td>
+          <td>Active Record</td>
+          <td>um <code>Book</code>, ou erro se o id não existe</td>
+        </tr>
+        <tr>
+          <td><code>Book.new</code> e <code>book.save</code></td>
+          <td>Active Record</td>
+          <td>um <code>Book</code>, depois <code>true</code> ou <code>false</code></td>
+        </tr>
+        <tr>
+          <td><code>book.update</code> e <code>book.destroy!</code></td>
+          <td>Active Record</td>
+          <td>atuam naquele registro, não numa relação</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>Create, Update e Delete ficam para os próximos passos. Hoje a prática é só esta diferença: relação encadeia, registro não.</p>
+
+    <pre><code>Book.alphabetical.where(category: "Poesia")   # relação
+Book.find(1).where(category: "Poesia")        # erro: Book não tem where</code></pre>
+
+    <h2>Faça no console</h2>
+    <p>Na raiz do repositório, com a API no ar:</p>
+    <pre><code>docker compose exec api bundle exec rails console</code></pre>
+    <ol class="practice">
+      <li><code>Book.singleton_methods(false).sort</code> — a lista do que este model definiu na classe. Procure <code>:alphabetical</code> e <code>:search</code>. <code>:find</code> não entra aí.</li>
+      <li><code>Book.alphabetical.class</code> — <code>ActiveRecord::Relation</code>.</li>
+      <li><code>Book.alphabetical.where(category: "Poesia").class</code> — ainda <code>ActiveRecord::Relation</code>.</li>
+      <li><code>Book.find(Book.pick(:id)).class</code> — <code>Book</code>. Se <code>pick</code> vier <code>nil</code>, o catálogo está vazio e esta linha fica para depois.</li>
+    </ol>
+
+    <h2>Recupere sem olhar acima</h2>
+    <div id="quiz" class="quiz"></div>
+
+    <h2>Os passos</h2>
+    <ol class="practice">
+      <li>Este: relação contra registro.</li>
+      <li>Create: <code>new</code> e <code>save</code>, como o <code>BooksController#create</code>.</li>
+      <li>Update: <code>update</code> no registro que o <code>find</code> carregou.</li>
+      <li>Delete: <code>destroy!</code>.</li>
+    </ol>
+
+    <p>A fonte desta lição é a seção <a href="https://guides.rubyonrails.org/active_record_basics.html#crud-reading-and-writing-data">CRUD: Reading and Writing Data</a>. O mapa de uma linha por método está na <a href="../reference/mapa-de-metodos.html">ficha</a>.</p>
+
+    <footer class="course">
+      <p>Quando terminar o console, manda o que <code>singleton_methods</code> listou. Se um nome te surpreender, pergunta antes de seguir para o Create.</p>
+      <nav>
+        <a href="0002-scope-com-if.html">Lição 0002</a>
+        <a href="0004-quem-recebe-o-metodo.html">Lição 0004</a>
+        <a href="../reference/mapa-de-metodos.html">Ficha: mapa de métodos</a>
+        <a href="https://guides.rubyonrails.org/active_record_basics.html#crud-reading-and-writing-data">Guia CRUD</a>
+      </nav>
+    </footer>
+  </main>
+  <script type="application/json" id="quiz-data">
+  [
+    {
+      "prompt": "Book.alphabetical.search(params[:q]) devolve o quê?",
+      "options": [
+        "Um Book já gravado no banco",
+        "Nil quando a busca vem vazia",
+        "Uma relação que ainda aceita page"
+      ],
+      "answer": 2,
+      "why": "Os dois scopes devolvem relação. page entra nessa cadeia no index."
+    },
+    {
+      "prompt": "Book.find(params[:id]) devolve o quê quando o id existe?",
+      "options": [
+        "Uma relação ainda aberta ao where",
+        "Um registro Book daquele id pedido",
+        "Somente um array com aquele id"
+      ],
+      "answer": 1,
+      "why": "find é leitura de um registro. O guia mostra um Book, não uma relação."
+    },
+    {
+      "prompt": "Onde find, new, save, update e destroy são definidos?",
+      "options": [
+        "Você escreveu cada um no book.rb",
+        "O BooksController declara todos esses métodos",
+        "Active Record entrega isso por herança"
+      ],
+      "answer": 2,
+      "why": "O guia diz que o Active Record cria os métodos de CRUD. book.rb acrescenta scope, validação e associação."
+    }
+  ]
+  </script>
+  <script src="../assets/quiz.js"></script>
+</body>
+</html>

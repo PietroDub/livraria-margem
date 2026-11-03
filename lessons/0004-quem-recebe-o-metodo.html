@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quem recebe o método</title>
+  <link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+  <main>
+    <header class="course">
+      <p class="kicker">Lição 0004 · Active Record na Margem</p>
+      <h1>Quem recebe o método</h1>
+      <p class="lede">O ponto chama o método no objeto à esquerda. <code>where</code> existe na relação. <code>find</code> já trocou a relação por um <code>Book</code>.</p>
+    </header>
+
+    <p><code>where</code> e <code>find</code> os dois vêm do Active Record, como o CRUD. O guia separa pelo retorno, na abertura de <a href="https://guides.rubyonrails.org/active_record_querying.html#retrieving-records-from-the-database">Retrieving Records</a>: <code>where</code> devolve uma <code>ActiveRecord::Relation</code>; <code>find</code> devolve uma instância do model.</p>
+
+    <p><code>alphabetical</code> é só o nome que você deu a <code>order(:title, :id)</code>. Esse <code>order</code> também devolve relação. Por isso a linha de baixo ainda tem para quem mandar o <code>where</code>.</p>
+
+    <pre><code>Book.alphabetical.where(category: "Poesia")
+
+Book          .alphabetical          .where(category: "Poesia")
+recebe         devolve Relation        quem recebe where
+alphabetical                           é essa Relation</code></pre>
+
+    <p><code>category: "Poesia"</code> é um argumento nomeado, o mesmo que passar o hash <code>{ category: "Poesia" }</code>. A chave é a coluna, o valor é o filtro. O <code>where</code> guarda isso na relação. A SQL sai assim, no mesmo formato do guia:</p>
+
+    <pre><code>SELECT "books".* FROM "books"
+WHERE "books"."category" = 'Poesia'
+ORDER BY "books"."title" ASC, "books"."id" ASC</code></pre>
+
+    <p>A relação ainda não é um livro. Ela é a descrição da consulta. O <a href="https://guides.rubyonrails.org/active_record_querying.html#understanding-method-chaining">trecho sobre method chaining</a> diz para encadear enquanto o método anterior devolver relação, e deixar por último o método que devolve um registro.</p>
+
+    <pre><code>Book.find(1).where(category: "Poesia")
+
+Book          .find(1)               .where(category: "Poesia")
+recebe         devolve um Book         quem recebe where
+find                                   é esse Book</code></pre>
+
+    <p>A instância tem <code>title</code>, <code>save</code>, <code>update</code>, <code>destroy</code>. Não tem <code>where</code>, porque a consulta já rodou e virou um objeto. O erro é <code>NoMethodError</code>: <code>where</code> não existe em <code>Book</code>.</p>
+
+    <p><code>Book.where(category: "Poesia")</code> funciona sem scope nenhum. A classe encaminha <code>where</code> para <code>Book.all</code>, e <code>all</code> é uma relação. O scope entra quando você quer repetir uma consulta com nome, como <code>alphabetical</code> antes do <code>where</code>.</p>
+
+    <h2>Faça no console</h2>
+    <pre><code>docker compose exec api bundle exec rails console</code></pre>
+    <ol class="practice">
+      <li><code>rel = Book.alphabetical</code> e depois <code>rel.class</code>. Relação.</li>
+      <li><code>rel.respond_to?(:where)</code>. <code>true</code>.</li>
+      <li><code>book = Book.new</code> e depois <code>book.respond_to?(:where)</code>. <code>false</code>.</li>
+      <li><code>Book.respond_to?(:where)</code>. <code>true</code>: a classe também recebe <code>where</code>, e encaminha para a relação.</li>
+    </ol>
+
+    <h2>Recupere sem olhar acima</h2>
+    <div id="quiz" class="quiz"></div>
+
+    <footer class="course">
+      <p>Se o <code>respond_to?</code> não bater com esses três, manda o que apareceu. O próximo passo continua sendo o Create, depois que esta cadeia estiver estável.</p>
+      <nav>
+        <a href="0003-dois-tipos-de-metodo.html">Lição 0003</a>
+        <a href="../reference/mapa-de-metodos.html">Ficha: mapa de métodos</a>
+        <a href="https://guides.rubyonrails.org/active_record_querying.html#understanding-method-chaining">Guia: method chaining</a>
+      </nav>
+    </footer>
+  </main>
+  <script type="application/json" id="quiz-data">
+  [
+    {
+      "prompt": "Em Book.alphabetical.where(category: \"Poesia\"), quem recebe where?",
+      "options": [
+        "O Book que o find carregou",
+        "A relação que o alphabetical devolveu",
+        "O scope search escrito no model"
+      ],
+      "answer": 1,
+      "why": "alphabetical devolve a relação do order. O ponto seguinte chama where nessa relação."
+    },
+    {
+      "prompt": "Book.find(1).where(category: \"Poesia\") quebra porque",
+      "options": [
+        "Where existe só dentro de scope",
+        "Poesia não entra na lista fechada",
+        "Find devolve Book e não relação"
+      ],
+      "answer": 2,
+      "why": "find devolve a instância. where é método da relação, não do registro."
+    },
+    {
+      "prompt": "Book.where(category: \"Poesia\"), sem scope, existe por quê?",
+      "options": [
+        "Porque alphabetical já define o where",
+        "Porque você declarou where no book.rb",
+        "Porque a classe herda o where"
+      ],
+      "answer": 2,
+      "why": "where é herdado, como find. A classe encaminha a chamada para a relação de Book.all."
+    }
+  ]
+  </script>
+  <script src="../assets/quiz.js"></script>
+</body>
+</html>
