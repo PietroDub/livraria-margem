@@ -1,0 +1,14 @@
+AllCops:
+  NewCops: disable
+
+Layout:
+  Enabled: true
+
+Lint:
+  Enabled: false
+
+Metrics:
+  Enabled: false
+
+Style:
+  Enabled: false

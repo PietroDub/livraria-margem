@@ -6,4 +6,7 @@ gem 'puma', '>= 6.0'
 gem 'rack-cors', '~> 3.0'
 gem 'bcrypt'
 gem 'jbuilder'
-
+gem 'rspec-rails'
+gem 'ruby-lsp', require: false
+gem 'rubocop', require: false
+gem 'kaminari', '>= 1.2.2'

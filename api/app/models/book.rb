@@ -23,6 +23,29 @@ class Book < ApplicationRecord
   # order(:title, :id) ordena primeiro por título e depois por id.
   scope :alphabetical, -> { order(:title, :id) }
 
+  # Sem termo, devolve a relação inteira. Com termo, restringe título, autor ou ISBN.
+  # scope utilizado para buscar ou filtrar varios objetos
+  
+  scope :search, ->(term) {
+    if term.blank?
+      all
+    else
+      like = "%#{sanitize_sql_like(term.to_s.strip.downcase)}%"
+      where(
+        'LOWER(title) LIKE :like OR LOWER(author) LIKE :like OR LOWER(isbn) LIKE :like',
+        like: like
+      )
+    end
+  }
+
+  scope :in_stock, -> { where('stock > 0') }
+
+  # método para formatar o preço do livro
+  # def é utilizado quando trabalha com um objeto específico
+  def format_price
+    format('%.2f', price_cents / 100.0)
+  end
+
   private
 
   def normalize_text

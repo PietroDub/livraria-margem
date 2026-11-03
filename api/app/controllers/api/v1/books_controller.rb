@@ -6,7 +6,7 @@ module Api
 
       # GET /api/v1/books
       def index
-        @books = Book.alphabetical
+        @books = Book.alphabetical.search(params[:q]).page(params[:page])
         render formats: :json
       end
 
@@ -20,11 +20,11 @@ module Api
 
       # POST /api/v1/books
       def create
-        book = Book.new(book_params)
-        if book.save
+        @book = Book.new(book_params)
+        if @book.save
           render formats: :json, status: :created
         else
-          render json: { errors: book.errors.full_messages }, status: :unprocessable_entity
+          render json: { errors: @book.errors.full_messages }, status: :unprocessable_entity
         end
       end
 
