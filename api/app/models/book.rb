@@ -36,6 +36,10 @@ class Book < ApplicationRecord
     end
   }
 
+  scope :in_stock, -> { where('stock > 0') }
+
+  scope: format_price, -> { format('%.2f', price_cents / 100.0) }
+
   private
 
   def normalize_text
