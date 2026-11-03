@@ -139,4 +139,39 @@ RSpec.describe Api::V1::BooksController, type: :controller do
       expect(JSON.parse(response.body)['error']).to eq('Objeto não encontrado.')
     end
   end
+
+  describe '#in_stock' do
+  it 'retorna livros com estoque positivo' do
+    book = create(:book, stock: 5)
+    authenticate(book.user)
+
+    get :in_stock
+
+    expect(response).to have_http_status(:ok)
+    ids = JSON.parse(response.body)['books'].map { |item| item['id'] }
+    expect(ids).to include(book.id)
+  end
+
+  it 'não inclui livros sem estoque' do
+    in_stock = create(:book, stock: 3)
+    out_of_stock = create(:book, stock: 0)
+    authenticate(in_stock.user)
+  
+    get :in_stock
+  
+    ids = JSON.parse(response.body)['books'].map { |item| item['id'] }
+    expect(ids).to include(in_stock.id)
+    expect(ids).not_to include(out_of_stock.id)
+  end
+
+  it 'retorna 404 quando nenhum livro tem estoque' do
+    book = create(:book, stock: 0)
+    authenticate(book.user)
+  
+    get :in_stock
+  
+    expect(response).to have_http_status(:not_found)
+    expect(JSON.parse(response.body)['error']).to eq('Nenhum livro em estoque')
+  end
+  end
 end

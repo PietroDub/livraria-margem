@@ -28,6 +28,17 @@ module Api
         end
       end
 
+      # GET /api/v1/books/in_stock
+      def in_stock
+        @books = Book.in_stock.page(params[:page])
+
+        if @books.empty?
+          render json: { error: "Nenhum livro em estoque" }, status: :not_found
+        else
+          render formats: :json
+        end
+      end
+
       # PATCH /api/v1/books/:id
       def update
         if @book.update(book_params)
