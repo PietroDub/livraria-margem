@@ -7,6 +7,13 @@ module FactoryHelpers
     Array.new(amount) { |index| create(factory_name, attributes_for_list(factory_name, attributes, index)) }
   end
 
+  def authenticate(user)
+    token = Rails.application.message_verifier(:authentication).generate(
+      { user_id: user.id }, expires_in: 24.hours.to_i, purpose: :login
+    )
+    request.headers['Authorization'] = "Bearer #{token}"
+  end
+
   private
 
   def factory_class(factory_name)
