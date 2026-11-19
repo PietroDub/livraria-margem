@@ -12,6 +12,8 @@ O caminho mais simples no Windows é instalar Docker Desktop com WSL 2, iniciar 
 docker compose up --build
 ```
 
+Comandos de subir, testar, console e os exercícios do `create` estão em [docs/COMANDOS.md](docs/COMANDOS.md).
+
 Abra http://localhost:3000. A API roda em http://localhost:3001/api/v1/books e o healthcheck em http://localhost:3001/up. O seed cria seis livros de exemplo. Os ISBNs são identificadores didáticos, sem garantia de corresponder à edição comercial mencionada. O banco permanece no volume `books_data` após reiniciar os containers. `docker compose down` encerra os serviços; adicionar `-v` APAGA o banco.
 
 O compose é para desenvolvimento: instala dependências, prepara o banco e inicia os servidores. Não é uma configuração de produção. A imagem Ruby resolve as gems no primeiro build; use `bundle lock` e versione o Gemfile.lock antes de distribuir uma release reproduzível da API.
