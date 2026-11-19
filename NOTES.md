@@ -7,4 +7,4 @@
 - Perguntou se `Book.search` deveria ser `def` porque tem `if`. Resposta dada na lição 0002: o guia permite condicional em scope; a troca é estilo; o ramo vazio precisa continuar `all` por causa de `alphabetical.search.page`. Ainda não houve quiz confirmado.
 - Quer o CRUD passo a passo, com um exemplo mínimo. Sequência: 0003 relação contra registro; depois Create (`new`/`save`); Update; Delete. Não juntar os verbos numa aula.
 - Metade certa: CRUD vem do pai. Metade a corrigir: `where` também é herdado; scope só nomeia uma consulta. A cadeia depende do retorno, não de quem escreveu o método. Lição 0004.
-- Create (`new` / `save` / 201 / 422) está entendido. Cola de comandos e exercícios em `docs/COMANDOS.md`. Próximo passo, depois dos quatro `save` falsos: `update`.
+- Create e update estão em `docs/COMANDOS.md`. Destroy também: `find`, `destroy!`, 204, id inexistente é 404. O ciclo do livro fecha nesse verbo.

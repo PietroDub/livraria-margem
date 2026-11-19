@@ -109,4 +109,44 @@ A categoria precisa ser uma de `Book::CATEGORIES`. O ISBN tem 10 ou 13 dígitos 
 
 Pela API, `POST /api/v1/books` exige Bearer e o envelope `{ "book": { ... } }`. Título vazio responde 422 com `errors`. O mesmo caminho está nos exemplos `cria um livro` e `retorna 422 quando os dados são inválidos` de `books_controller_spec.rb`.
 
-Quando esses quatro `save` falsos estiverem previsíveis sem olhar o model, o próximo passo é o `update`: `Book.find` devolve o registro, e `update` grava ou devolve `false` com `errors`.
+## O que fazer com o update
+
+`PATCH /api/v1/books/:id` passa por `set_book`, que faz `Book.find`. Id inexistente responde 404 com `"Objeto não encontrado."` e o `update` nem roda. A action exige Bearer.
+
+Com o livro encontrado, `@book.update(book_params)` altera os campos permitidos e grava. `true` responde 200 com o livro. `false` responde 422 com `errors`, e o banco fica como estava.
+
+No console, use o id do livro que o `create` gravou:
+
+```ruby
+book = Book.find(1)
+book.update(title: 'Memórias póstumas')  # true
+book.title                                   # título novo
+
+book.update(title: '')                       # false
+book.errors.full_messages
+book.reload.title                            # o título anterior continua no banco
+
+book.update(stock: -1)                       # false
+book.update(isbn: '9780000000001')           # false, se outro livro já tem esse ISBN
+```
+
+`update` é atribuir e dar `save`. `update!` grava ou levanta `ActiveRecord::RecordInvalid`.
+
+## O que fazer com o destroy
+
+`DELETE /api/v1/books/:id` também passa por `set_book`. Id inexistente responde 404 com `"Objeto não encontrado."`. A action exige Bearer.
+
+Com o livro encontrado, `@book.destroy!` apaga a linha. `head :no_content` responde 204 sem corpo. Não há 422: ou apaga, ou o `find` já respondeu 404.
+
+No console, use um livro que você criou no exercício, não um do seed:
+
+```ruby
+book = Book.find(1)
+book.destroy!
+book.destroyed?   # true
+Book.find(1)      # ActiveRecord::RecordNotFound
+```
+
+`destroy` também apaga. `destroy!` apaga ou levanta `ActiveRecord::RecordNotDestroyed`. Nesse model os dois concluem a exclusão.
+
+Apagar um usuário apaga os livros dele: `User` tem `has_many :books, dependent: :destroy`. O ciclo do livro fecha aqui: criar, atualizar, apagar.

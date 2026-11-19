@@ -22,64 +22,76 @@ class UsersTest < ActionDispatch::IntegrationTest
          as: :json
 
     assert_response :unprocessable_entity
-    assert_equal 'Nome é obrigatório', response.parsed_body['error']
+    assert response.parsed_body['errors'].any?
   end
 
   # TODO: testes para edição de email, id e senha
 
   test 'edita um usuário e retorna seu email' do
-    post '/api/v1/users',
-         params: { user: { name: 'Ana Silva', email: 'ana@example.com', password: 'senha123' } },
-         headers: { "Authorization" => "Bearer #{token}" },
-         as: :json
-    token = Rails.application.message_verifier(:authentication).generate(
-      { user_id: user.id }, expires_in: 24.hours.to_i, purpose: :login
-    )
+    user = create_user
 
-    assert_response :updated
-    assert_equal 'ana@example.com', response.parsed_body['email']
+    patch "/api/v1/users/#{user.id}",
+          params: { user: { email: 'ana.silva@example.com', password: 'senha123' } },
+          headers: auth_headers(user),
+          as: :json
+
+    assert_response :ok
+    assert_equal 'ana.silva@example.com', response.parsed_body['email']
   end
 
   test 'edita um usuario com email já existente e retorna 422 Unprocessable Entity' do
-    post '/api/v1/users',
-         params: { user: { name: 'Ana Silva', email: 'ana@example.com', password: 'senha123' } },
-         as: :json
+    create_user
+    other = create_user(name: 'Outra Pessoa', email: 'outra.pessoa@example.com')
+
+    patch "/api/v1/users/#{other.id}",
+          params: { user: { email: 'ana@example.com', password: 'senha123' } },
+          headers: auth_headers(other),
+          as: :json
 
     assert_response :unprocessable_entity
-    assert_equal 'Email já existente', response.parsed_body['error']
+    assert response.parsed_body['errors'].any?
   end
 
   test 'edita um usuario com ID inexistente e retorna 404 Not Found' do
-    put '/api/v1/users/100',
-        params: { user: { name: 'Ana Silva', email: 'ana@example.com', password: 'senha123' } },
-        as: :json
+    user = create_user
+
+    patch '/api/v1/users/100',
+          params: { user: { name: 'Ana Silva', email: 'outra.pessoa@example.com', password: 'senha123' } },
+          headers: auth_headers(user),
+          as: :json
 
     assert_response :not_found
-    assert_equal 'Usuário não encontrado', response.parsed_body['error']
+    assert_equal 'Objeto não encontrado.', response.parsed_body['error']
   end
 
   # TODO: testes para exclusão de usuário
 
   test 'exclui um usuário e retorna 204 No Content' do
-    post '/api/v1/users',
-         params: { user: { name: 'Ana Silva', email: 'ana@example.com', password: 'senha123' } },
-         as: :json
+    user = create_user
+
+    delete "/api/v1/users/#{user.id}", headers: auth_headers(user), as: :json
 
     assert_response :no_content
-    assert_equal nil, User.find_by(email: 'ana@example.com')
+    assert_nil User.find_by(email: user.email)
   end
 
   test 'exclui um usuário e retorna 404 Not Found' do
-    delete '/api/v1/users/1'
+    user = create_user
+
+    delete '/api/v1/users/100', headers: auth_headers(user), as: :json
+
     assert_response :not_found
   end
 
   # TODO: testes para listagem de usuários
 
   test 'lista todos os usuários e retorna 200 OK' do
-    get '/api/v1/users'
+    user = create_user
+
+    get '/api/v1/users', headers: auth_headers(user), as: :json
+
     assert_response :ok
-    assert_equal User.all, response.parsed_body
+    assert_includes response.parsed_body.map { |item| item['email'] }, user.email
   end
 
   test 'login de usuário e retorna 200 OK com token' do
@@ -138,7 +150,7 @@ class UsersTest < ActionDispatch::IntegrationTest
          params: { user: { name: 'Ana Silva', email: 'ana@example.com', password: 'senha123' } },
          as: :json
 
-    assert_response :ok
+    assert_response :created
     assert_equal 'Ana Silva', response.parsed_body['name']
   end
 
@@ -148,6 +160,6 @@ class UsersTest < ActionDispatch::IntegrationTest
          as: :json
 
     assert_response :not_found
-    assert_equal 'Livro não encontrado', response.parsed_body['error']
+    assert_equal 'Not Found', response.parsed_body['error']
   end
 end

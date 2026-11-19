@@ -15,7 +15,7 @@ class BooksTest < ActionDispatch::IntegrationTest
     id = response.parsed_body.fetch('id')
     get '/api/v1/books'
     assert_response :success
-    assert response.parsed_body.any? { |book| book['id'] == id }
+    assert response.parsed_body.fetch('books').any? { |book| book['id'] == id }
     get "/api/v1/books/#{id}"
     assert_equal 'Ruby na prática', response.parsed_body['title']
     patch "/api/v1/books/#{id}", params: { book: { stock: 7 } }, headers: @headers, as: :json

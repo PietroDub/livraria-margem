@@ -63,6 +63,20 @@ module Api
       def book_params
         params.require(:book).permit(:title, :author, :category, :isbn, :price_cents, :stock, :description)
       end
+
+      def sell_book
+        @book = Book.find(params[:id])
+        if(!@book)
+          return render json: { error: "Livro não encontrado" }, status: :not_found
+        end
+
+        if(@book.stock <= 0)
+          return render json: { error: "Livro sem estoque" }, status: :unprocessable_entity
+        end
+
+          @book.update(stock: @book.stock - 1)
+          render json: @book
+      end
     end
   end
 end

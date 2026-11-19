@@ -174,4 +174,37 @@ RSpec.describe Api::V1::BooksController, type: :controller do
     expect(JSON.parse(response.body)['error']).to eq('Nenhum livro em estoque')
   end
   end
+
+  describe '#sell_book' do
+    it 'retorna 200 e o livro vendido' do
+      book = create(:book, stock: 5)
+      authenticate(book.user)
+
+      post :sell_book, params: { id: book.id }
+
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body)['title']).to eq(book.title)
+      expect(JSON.parse(response.body)['stock']).to eq(4)
+    end
+
+    it 'retorna 404 quando o livro não é encontrado' do
+      user = create(:user)
+      authenticate(user)
+
+      post :sell_book, params: { id: 999 }
+
+      expect(response).to have_http_status(:not_found)
+      expect(JSON.parse(response.body)['error']).to eq('Livro não encontrado')
+    end
+
+    it 'retorna 422 quando o livro não tem estoque' do
+      book = create(:book, stock: 0)
+      authenticate(book.user)
+
+      post :sell_book, params: { id: book.id }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(JSON.parse(response.body)['error']).to eq('Livro sem estoque')
+    end
+  end
 end
