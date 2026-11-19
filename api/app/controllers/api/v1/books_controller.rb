@@ -35,7 +35,7 @@ module Api
         if @books.empty?
           render json: { error: "Nenhum livro em estoque" }, status: :not_found
         else
-          render formats: :json
+          render :index, formats: :json
         end
       end
 

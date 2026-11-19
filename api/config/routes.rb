@@ -15,6 +15,9 @@ Rails.application.routes.draw do
       post 'users/login', to: 'users#login'
       # Fora do REST: POST /api/v1/users/logout → UsersController#logout
       post 'users/logout', to: 'users#logout' 
+
+      # Fora do REST: GET /api/v1/books/in_stock → BooksController#in_stock
+      get 'books/in_stock', to: 'books#in_stock'
     end
   end
 end
